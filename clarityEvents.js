@@ -3,10 +3,14 @@
   function sendToPlugin(action, data) {
     try {
       var d = data ? JSON.parse(data) : {};
-      if (typeof npWindowID !== "undefined" && npWindowID && d._windowID === void 0) d._windowID = npWindowID;
+      if (
+        typeof npWindowID !== "undefined" &&
+        npWindowID &&
+        d._windowID === void 0
+      )
+        d._windowID = npWindowID;
       data = JSON.stringify(d);
-    } catch (e) {
-    }
+    } catch (e) {}
     return sendMessageToPlugin(action, data);
   }
 
@@ -18,7 +22,15 @@
     currentView: "inbox",
     currentNoteFilename: null,
     expandedTaskId: null,
-    filters: { tag: null, folder: null, mention: null, text: "", noteStatus: "all", todayRepeat: "all", hideFuture: false },
+    filters: {
+      tag: null,
+      folder: null,
+      mention: null,
+      text: "",
+      noteStatus: "all",
+      todayRepeat: "all",
+      hideFuture: false
+    },
     grouping: "note",
     movedFromInbox: [],
     editDraft: null,
@@ -33,7 +45,13 @@
     hideEmptyProjects: false,
     hideNonProjects: false,
     hidePaused: false,
-    visibleViews: { inbox: true, today: true, upcoming: true, anytime: true, someday: true },
+    visibleViews: {
+      inbox: true,
+      today: true,
+      upcoming: true,
+      anytime: true,
+      someday: true
+    },
     settingsPopoverOpen: false,
     recentNotes: [],
     // How far back the plugin scans daily notes for Inbox, and how far ahead
@@ -45,13 +63,16 @@
   var MAX_RECENT_NOTES = 12;
   function pushRecentNote(filename) {
     if (!filename) return;
-    var arr = (State.recentNotes || []).filter(function(f) {
+    var arr = (State.recentNotes || []).filter(function (f) {
       return f !== filename;
     });
     arr.unshift(filename);
     if (arr.length > MAX_RECENT_NOTES) arr = arr.slice(0, MAX_RECENT_NOTES);
     State.recentNotes = arr;
-    sendToPlugin("saveRecentNotes", JSON.stringify({ recentNotes: JSON.stringify(arr) }));
+    sendToPlugin(
+      "saveRecentNotes",
+      JSON.stringify({ recentNotes: JSON.stringify(arr) })
+    );
   }
   function viewPrefsKey(view, filename) {
     return view === "note" ? "note:" + (filename || "") : view;
@@ -59,10 +80,19 @@
   function saveCurrentViewPrefs() {
     var key = viewPrefsKey(State.currentView, State.currentNoteFilename);
     if (State.currentView === "note") {
-      State.viewPrefs[key] = { noteStatus: State.filters.noteStatus, tasksOnly: State.tasksOnly, hideFuture: State.filters.hideFuture };
+      State.viewPrefs[key] = {
+        noteStatus: State.filters.noteStatus,
+        tasksOnly: State.tasksOnly,
+        hideFuture: State.filters.hideFuture
+      };
     } else {
-      var prefs = { tag: State.filters.tag, folder: State.filters.folder, grouping: State.grouping };
-      if (State.currentView === "today") prefs.todayRepeat = State.filters.todayRepeat;
+      var prefs = {
+        tag: State.filters.tag,
+        folder: State.filters.folder,
+        grouping: State.grouping
+      };
+      if (State.currentView === "today")
+        prefs.todayRepeat = State.filters.todayRepeat;
       State.viewPrefs[key] = prefs;
     }
   }
@@ -70,14 +100,15 @@
     var key = viewPrefsKey(view, filename);
     var saved = State.viewPrefs[key];
     if (view === "note") {
-      State.filters.noteStatus = saved && saved.noteStatus || "all";
-      State.tasksOnly = saved && saved.tasksOnly || false;
-      State.filters.hideFuture = saved && saved.hideFuture || false;
+      State.filters.noteStatus = (saved && saved.noteStatus) || "all";
+      State.tasksOnly = (saved && saved.tasksOnly) || false;
+      State.filters.hideFuture = (saved && saved.hideFuture) || false;
     } else {
-      State.filters.tag = saved && saved.tag || null;
-      State.filters.folder = saved && saved.folder || null;
-      State.grouping = saved && saved.grouping || defaultGrouping(view);
-      State.filters.todayRepeat = view === "today" && saved && saved.todayRepeat || "all";
+      State.filters.tag = (saved && saved.tag) || null;
+      State.filters.folder = (saved && saved.folder) || null;
+      State.grouping = (saved && saved.grouping) || defaultGrouping(view);
+      State.filters.todayRepeat =
+        (view === "today" && saved && saved.todayRepeat) || "all";
     }
   }
   function defaultGrouping(view) {
@@ -86,7 +117,10 @@
     return "note";
   }
   function persistViewPrefs() {
-    sendToPlugin("saveViewPrefs", JSON.stringify({ viewPrefs: JSON.stringify(State.viewPrefs) }));
+    sendToPlugin(
+      "saveViewPrefs",
+      JSON.stringify({ viewPrefs: JSON.stringify(State.viewPrefs) })
+    );
   }
 
   // src/webview/lib/review.js
@@ -157,7 +191,11 @@
   // src/webview/lib/helpers.js
   function esc(str) {
     if (!str) return "";
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    return str
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
   function capitalize(s) {
     return s.charAt(0).toUpperCase() + s.slice(1);
@@ -166,7 +204,9 @@
     if (!s) return null;
     var p = String(s).split("-");
     if (p.length < 3) return null;
-    var y = parseInt(p[0], 10), m = parseInt(p[1], 10), d = parseInt(p[2], 10);
+    var y = parseInt(p[0], 10),
+      m = parseInt(p[1], 10),
+      d = parseInt(p[2], 10);
     if (isNaN(y) || isNaN(m) || isNaN(d)) return null;
     return new Date(y, m - 1, d);
   }
@@ -178,17 +218,37 @@
   }
   function addDays(dateStr, n) {
     var parts = dateStr.split("-");
-    var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    var d = new Date(
+      parseInt(parts[0]),
+      parseInt(parts[1]) - 1,
+      parseInt(parts[2])
+    );
     d.setDate(d.getDate() + n);
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    return (
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0")
+    );
   }
   function getNextMonday(dateStr) {
     var parts = dateStr.split("-");
-    var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    var d = new Date(
+      parseInt(parts[0]),
+      parseInt(parts[1]) - 1,
+      parseInt(parts[2])
+    );
     var day = d.getDay();
     var daysUntilMon = day === 0 ? 1 : 8 - day;
     d.setDate(d.getDate() + daysUntilMon);
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    return (
+      d.getFullYear() +
+      "-" +
+      String(d.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(d.getDate()).padStart(2, "0")
+    );
   }
   function addWeeks(weekStr, n) {
     var parts = weekStr.split("-W");
@@ -204,10 +264,37 @@
     if (!dateStr || dateStr === "No Date") return dateStr;
     try {
       var parts = dateStr.split("-");
-      var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-      var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      return months[d.getMonth()] + " " + d.getDate() + " \u2014 " + days[d.getDay()];
+      var d = new Date(
+        parseInt(parts[0]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2])
+      );
+      var days = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday"
+      ];
+      var months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ];
+      return (
+        months[d.getMonth()] + " " + d.getDate() + " \u2014 " + days[d.getDay()]
+      );
     } catch (e) {
       return dateStr;
     }
@@ -215,14 +302,38 @@
   function formatUpcomingDateHeader(dateStr) {
     try {
       var parts = dateStr.split("-");
-      var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+      var d = new Date(
+        parseInt(parts[0]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2])
+      );
       var days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      var label = days[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate();
+      var months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ];
+      var label =
+        days[d.getDay()] + ", " + months[d.getMonth()] + " " + d.getDate();
       var tomorrow = /* @__PURE__ */ new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
-      var tmrStr = tomorrow.getFullYear() + "-" + String(tomorrow.getMonth() + 1).padStart(2, "0") + "-" + String(tomorrow.getDate()).padStart(2, "0");
-      if (dateStr === tmrStr) label += ' <span style="opacity:0.5;font-weight:400;">Tomorrow</span>';
+      var tmrStr =
+        tomorrow.getFullYear() +
+        "-" +
+        String(tomorrow.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(tomorrow.getDate()).padStart(2, "0");
+      if (dateStr === tmrStr)
+        label += ' <span style="opacity:0.5;font-weight:400;">Tomorrow</span>';
       return label;
     } catch (e) {
       return dateStr;
@@ -237,8 +348,30 @@
       var dayOffset = (jan1.getDay() + 6) % 7;
       var weekStart = new Date(year, 0, 1 + (week - 1) * 7 - dayOffset);
       var weekEnd = new Date(weekStart.getTime() + 6 * 864e5);
-      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-      return "Week " + week + " \u2014 " + months[weekStart.getMonth()] + " " + weekStart.getDate() + "\u2013" + weekEnd.getDate();
+      var months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ];
+      return (
+        "Week " +
+        week +
+        " \u2014 " +
+        months[weekStart.getMonth()] +
+        " " +
+        weekStart.getDate() +
+        "\u2013" +
+        weekEnd.getDate()
+      );
     } catch (e) {
       return weekStr;
     }
@@ -246,8 +379,25 @@
   function formatShortDate(dateStr) {
     try {
       var parts = dateStr.split("-");
-      var d = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-      var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      var d = new Date(
+        parseInt(parts[0]),
+        parseInt(parts[1]) - 1,
+        parseInt(parts[2])
+      );
+      var months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec"
+      ];
       return months[d.getMonth()] + " " + d.getDate();
     } catch (e) {
       return dateStr;
@@ -257,15 +407,33 @@
   // src/webview/lib/icons.js
   function buildPauseOverlay(size) {
     var s = size || 18;
-    return '<svg class="cl-status-overlay" width="' + s + '" height="' + s + '" viewBox="0 0 18 18" aria-hidden="true"><rect x="6" y="5.5" width="1.8" height="7" rx="0.4" fill="#fff" stroke="#374151" stroke-width="0.35"/><rect x="10.2" y="5.5" width="1.8" height="7" rx="0.4" fill="#fff" stroke="#374151" stroke-width="0.35"/></svg>';
+    return (
+      '<svg class="cl-status-overlay" width="' +
+      s +
+      '" height="' +
+      s +
+      '" viewBox="0 0 18 18" aria-hidden="true"><rect x="6" y="5.5" width="1.8" height="7" rx="0.4" fill="#fff" stroke="#374151" stroke-width="0.35"/><rect x="10.2" y="5.5" width="1.8" height="7" rx="0.4" fill="#fff" stroke="#374151" stroke-width="0.35"/></svg>'
+    );
   }
   function buildCheckOverlay(size) {
     var s = size || 18;
-    return '<svg class="cl-status-overlay" width="' + s + '" height="' + s + '" viewBox="0 0 18 18" aria-hidden="true"><path d="M6.6 9.3 L8.4 11.1 L11.6 7.6" fill="none" stroke="#1f2937" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    return (
+      '<svg class="cl-status-overlay" width="' +
+      s +
+      '" height="' +
+      s +
+      '" viewBox="0 0 18 18" aria-hidden="true"><path d="M6.6 9.3 L8.4 11.1 L11.6 7.6" fill="none" stroke="#1f2937" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    );
   }
   function buildXOverlay(size) {
     var s = size || 18;
-    return '<svg class="cl-status-overlay" width="' + s + '" height="' + s + '" viewBox="0 0 18 18" aria-hidden="true"><path d="M7.2 7.2 L10.8 10.8 M10.8 7.2 L7.2 10.8" fill="none" stroke="#1f2937" stroke-width="1.5" stroke-linecap="round"/></svg>';
+    return (
+      '<svg class="cl-status-overlay" width="' +
+      s +
+      '" height="' +
+      s +
+      '" viewBox="0 0 18 18" aria-hidden="true"><path d="M7.2 7.2 L10.8 10.8 M10.8 7.2 L7.2 10.8" fill="none" stroke="#1f2937" stroke-width="1.5" stroke-linecap="round"/></svg>'
+    );
   }
   function renderProjectIcon(noteLike, size) {
     var s = size || 18;
@@ -281,8 +449,13 @@
     if (isArea) {
       inner = buildAreaIcon(color, s);
     } else {
-      var forceFull = !isArea && (status === "completed" || status === "canceled");
-      var pct = forceFull ? 100 : noteLike.taskCount > 0 ? Math.round(noteLike.doneCount / noteLike.taskCount * 100) : 0;
+      var forceFull =
+        !isArea && (status === "completed" || status === "canceled");
+      var pct = forceFull
+        ? 100
+        : noteLike.taskCount > 0
+          ? Math.round((noteLike.doneCount / noteLike.taskCount) * 100)
+          : 0;
       inner = buildProgressPie(pct, color, s);
     }
     var overlay = "";
@@ -290,27 +463,60 @@
     else if (!isArea && status === "completed") overlay = buildCheckOverlay(s);
     else if (!isArea && status === "canceled") overlay = buildXOverlay(s);
     if (!overlay) return inner;
-    return '<span class="cl-icon-stack" style="width:' + s + "px;height:" + s + 'px">' + inner + overlay + "</span>";
+    return (
+      '<span class="cl-icon-stack" style="width:' +
+      s +
+      "px;height:" +
+      s +
+      'px">' +
+      inner +
+      overlay +
+      "</span>"
+    );
   }
   function buildProgressPie(pct, color, size) {
     var s = size || 18;
-    var svg = '<svg class="cl-progress-ring" width="' + s + '" height="' + s + '" viewBox="0 0 18 18">';
-    svg += '<circle cx="9" cy="9" r="7" fill="none" stroke="' + color + '" stroke-width="1.5"/>';
+    var svg =
+      '<svg class="cl-progress-ring" width="' +
+      s +
+      '" height="' +
+      s +
+      '" viewBox="0 0 18 18">';
+    svg +=
+      '<circle cx="9" cy="9" r="7" fill="none" stroke="' +
+      color +
+      '" stroke-width="1.5"/>';
     if (pct >= 100) {
       svg += '<circle cx="9" cy="9" r="5.2" fill="' + color + '"/>';
     } else if (pct > 0) {
       var r = 5.2;
-      var angle = pct / 100 * 360;
-      var endRad = (angle - 90) * Math.PI / 180;
+      var angle = (pct / 100) * 360;
+      var endRad = ((angle - 90) * Math.PI) / 180;
       var endX = 9 + r * Math.cos(endRad);
       var endY = 9 + r * Math.sin(endRad);
       var largeArc = angle > 180 ? 1 : 0;
-      svg += '<path d="M9,9 L9,' + (9 - r) + " A" + r + "," + r + " 0 " + largeArc + ",1 " + endX.toFixed(3) + "," + endY.toFixed(3) + ' Z" fill="' + color + '"/>';
+      svg +=
+        '<path d="M9,9 L9,' +
+        (9 - r) +
+        " A" +
+        r +
+        "," +
+        r +
+        " 0 " +
+        largeArc +
+        ",1 " +
+        endX.toFixed(3) +
+        "," +
+        endY.toFixed(3) +
+        ' Z" fill="' +
+        color +
+        '"/>';
     }
     svg += "</svg>";
     return svg;
   }
-  var DEADLINE_FLAG_SVG = '<svg class="cl-deadline-flag" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 3a1 1 0 0 1 1 1v17a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1zm2 1.5h11.2a.6.6 0 0 1 .49.94L17.5 9l2.19 3.56a.6.6 0 0 1-.51.94H8z"/></svg>';
+  var DEADLINE_FLAG_SVG =
+    '<svg class="cl-deadline-flag" width="11" height="11" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M6 3a1 1 0 0 1 1 1v17a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1zm2 1.5h11.2a.6.6 0 0 1 .49.94L17.5 9l2.19 3.56a.6.6 0 0 1-.51.94H8z"/></svg>';
   function buildDeadlineBadgeCompact(dueStr) {
     var diff = daysUntilDue(dueStr);
     if (diff === null) return "";
@@ -325,7 +531,16 @@
       cls = "cl-deadline-overdue";
       text = -diff + "d";
     }
-    return '<span class="cl-deadline cl-deadline-compact ' + cls + '" title="Due ' + esc(dueStr) + '">' + DEADLINE_FLAG_SVG + (text ? '<span class="cl-deadline-text">' + text + "</span>" : "") + "</span>";
+    return (
+      '<span class="cl-deadline cl-deadline-compact ' +
+      cls +
+      '" title="Due ' +
+      esc(dueStr) +
+      '">' +
+      DEADLINE_FLAG_SVG +
+      (text ? '<span class="cl-deadline-text">' + text + "</span>" : "") +
+      "</span>"
+    );
   }
   function buildDeadlineBadgeVerbose(dueStr) {
     var diff = daysUntilDue(dueStr);
@@ -341,33 +556,85 @@
       cls = "cl-deadline-overdue";
       suffix = -diff + " day" + (diff === -1 ? "" : "s") + " overdue";
     }
-    return '<span class="cl-deadline cl-deadline-verbose ' + cls + '">' + DEADLINE_FLAG_SVG + '<span class="cl-deadline-primary">Deadline: ' + esc(dueStr) + '</span><span class="cl-deadline-countdown">' + suffix + "</span></span>";
+    return (
+      '<span class="cl-deadline cl-deadline-verbose ' +
+      cls +
+      '">' +
+      DEADLINE_FLAG_SVG +
+      '<span class="cl-deadline-primary">Deadline: ' +
+      esc(dueStr) +
+      '</span><span class="cl-deadline-countdown">' +
+      suffix +
+      "</span></span>"
+    );
   }
   function buildAreaIcon(color, size) {
     var s = size || 18;
     var c = color || "#3B82F6";
-    var svg = '<svg class="cl-area-icon" width="' + s + '" height="' + s + '" viewBox="0 0 18 18">';
-    svg += '<path d="M9 2.6 L15.4 6.3 L9 10 L2.6 6.3 Z" fill="' + c + '" fill-opacity="0.95"/>';
-    svg += '<path d="M2.6 6.3 L9 10 L9 15.6 L2.6 11.9 Z" fill="' + c + '" fill-opacity="0.55"/>';
-    svg += '<path d="M15.4 6.3 L9 10 L9 15.6 L15.4 11.9 Z" fill="' + c + '" fill-opacity="0.78"/>';
-    svg += '<path d="M9 2.6 L15.4 6.3 L9 10 L2.6 6.3 Z" fill="none" stroke="' + c + '" stroke-width="0.6" stroke-opacity="0.9"/>';
+    var svg =
+      '<svg class="cl-area-icon" width="' +
+      s +
+      '" height="' +
+      s +
+      '" viewBox="0 0 18 18">';
+    svg +=
+      '<path d="M9 2.6 L15.4 6.3 L9 10 L2.6 6.3 Z" fill="' +
+      c +
+      '" fill-opacity="0.95"/>';
+    svg +=
+      '<path d="M2.6 6.3 L9 10 L9 15.6 L2.6 11.9 Z" fill="' +
+      c +
+      '" fill-opacity="0.55"/>';
+    svg +=
+      '<path d="M15.4 6.3 L9 10 L9 15.6 L15.4 11.9 Z" fill="' +
+      c +
+      '" fill-opacity="0.78"/>';
+    svg +=
+      '<path d="M9 2.6 L15.4 6.3 L9 10 L2.6 6.3 Z" fill="none" stroke="' +
+      c +
+      '" stroke-width="0.6" stroke-opacity="0.9"/>';
     svg += "</svg>";
     return svg;
   }
   function getViewIcon(id, size) {
     var s = size || 18;
-    var attrs = 'width="' + s + '" height="' + s + '" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"';
+    var attrs =
+      'width="' +
+      s +
+      '" height="' +
+      s +
+      '" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"';
     switch (id) {
       case "inbox":
-        return "<svg " + attrs + '><path d="M4.2 4.2h15.6a1.4 1.4 0 0 1 1.4 1.4v9.2a3 3 0 0 1-3 3H5.8a3 3 0 0 1-3-3V5.6a1.4 1.4 0 0 1 1.4-1.4z" fill="#1E88E5"/><path d="M3 13.2h5.2l1.3 2a1 1 0 0 0 .85.45h3.3a1 1 0 0 0 .85-.45l1.3-2H21v1.6a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" fill="#1565C0"/></svg>';
+        return (
+          "<svg " +
+          attrs +
+          '><path d="M4.2 4.2h15.6a1.4 1.4 0 0 1 1.4 1.4v9.2a3 3 0 0 1-3 3H5.8a3 3 0 0 1-3-3V5.6a1.4 1.4 0 0 1 1.4-1.4z" fill="#1E88E5"/><path d="M3 13.2h5.2l1.3 2a1 1 0 0 0 .85.45h3.3a1 1 0 0 0 .85-.45l1.3-2H21v1.6a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3z" fill="#1565C0"/></svg>'
+        );
       case "today":
-        return "<svg " + attrs + '><path d="M12 2.2l2.93 6.06 6.66.6a.5.5 0 0 1 .29.87l-5.04 4.43 1.52 6.55a.5.5 0 0 1-.74.54L12 17.85l-5.62 3.4a.5.5 0 0 1-.74-.54l1.52-6.55L2.12 9.73a.5.5 0 0 1 .29-.87l6.66-.6z" fill="#FFB300"/><path d="M12 17.85l-5.62 3.4a.5.5 0 0 1-.74-.54l1.52-6.55L2.12 9.73a.5.5 0 0 1 .29-.87l6.66-.6L12 2.2z" fill="#fff" fill-opacity="0.18"/></svg>';
+        return (
+          "<svg " +
+          attrs +
+          '><path d="M12 2.2l2.93 6.06 6.66.6a.5.5 0 0 1 .29.87l-5.04 4.43 1.52 6.55a.5.5 0 0 1-.74.54L12 17.85l-5.62 3.4a.5.5 0 0 1-.74-.54l1.52-6.55L2.12 9.73a.5.5 0 0 1 .29-.87l6.66-.6z" fill="#FFB300"/><path d="M12 17.85l-5.62 3.4a.5.5 0 0 1-.74-.54l1.52-6.55L2.12 9.73a.5.5 0 0 1 .29-.87l6.66-.6L12 2.2z" fill="#fff" fill-opacity="0.18"/></svg>'
+        );
       case "upcoming":
-        return "<svg " + attrs + '><rect x="2.5" y="5" width="19" height="16" rx="2.5" fill="#EC407A"/><path d="M5 5h14a2.5 2.5 0 0 1 2.5 2.5v2.2H2.5V7.5A2.5 2.5 0 0 1 5 5z" fill="#C2185B"/><rect x="6.4" y="2.6" width="2.2" height="4.8" rx="1.1" fill="#7B1538"/><rect x="15.4" y="2.6" width="2.2" height="4.8" rx="1.1" fill="#7B1538"/><rect x="6.6" y="2.8" width="1.8" height="1.4" rx="0.9" fill="#fff" fill-opacity="0.35"/><rect x="15.6" y="2.8" width="1.8" height="1.4" rx="0.9" fill="#fff" fill-opacity="0.35"/><circle cx="12" cy="15" r="3" fill="#fff"/><rect x="2.5" y="9.7" width="19" height="0.6" fill="#000" fill-opacity="0.12"/></svg>';
+        return (
+          "<svg " +
+          attrs +
+          '><rect x="2.5" y="5" width="19" height="16" rx="2.5" fill="#EC407A"/><path d="M5 5h14a2.5 2.5 0 0 1 2.5 2.5v2.2H2.5V7.5A2.5 2.5 0 0 1 5 5z" fill="#C2185B"/><rect x="6.4" y="2.6" width="2.2" height="4.8" rx="1.1" fill="#7B1538"/><rect x="15.4" y="2.6" width="2.2" height="4.8" rx="1.1" fill="#7B1538"/><rect x="6.6" y="2.8" width="1.8" height="1.4" rx="0.9" fill="#fff" fill-opacity="0.35"/><rect x="15.6" y="2.8" width="1.8" height="1.4" rx="0.9" fill="#fff" fill-opacity="0.35"/><circle cx="12" cy="15" r="3" fill="#fff"/><rect x="2.5" y="9.7" width="19" height="0.6" fill="#000" fill-opacity="0.12"/></svg>'
+        );
       case "anytime":
-        return "<svg " + attrs + '><path d="M12 14.5l-9-4.25v1.5L12 16l9-4.25v-1.5z" fill="#00695C"/><path d="M12 18l-9-4.25v1.5L12 19.5l9-4.25v-1.5z" fill="#00695C"/><path d="M12 3L3 7.25 12 11.5l9-4.25z" fill="#4DB6AC"/><path d="M12 7.5L3 11.75 12 16l9-4.25z" fill="#26A69A"/><path d="M12 12L3 16.25 12 20.5l9-4.25z" fill="#00897B"/></svg>';
+        return (
+          "<svg " +
+          attrs +
+          '><path d="M12 14.5l-9-4.25v1.5L12 16l9-4.25v-1.5z" fill="#00695C"/><path d="M12 18l-9-4.25v1.5L12 19.5l9-4.25v-1.5z" fill="#00695C"/><path d="M12 3L3 7.25 12 11.5l9-4.25z" fill="#4DB6AC"/><path d="M12 7.5L3 11.75 12 16l9-4.25z" fill="#26A69A"/><path d="M12 12L3 16.25 12 20.5l9-4.25z" fill="#00897B"/></svg>'
+        );
       case "someday":
-        return "<svg " + attrs + '><path d="M3 9.5h18v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#A77855"/><path d="M3.5 4.5h17a1 1 0 0 1 1 1V9.5h-19V5.5a1 1 0 0 1 1-1z" fill="#CB9970"/><rect x="3" y="9.2" width="18" height="0.8" fill="#000" fill-opacity="0.2"/><rect x="11" y="4.5" width="2" height="16" fill="#7A5238" fill-opacity="0.45"/><rect x="9.4" y="12.6" width="5.2" height="1.8" rx="0.9" fill="#3E2615"/><rect x="3.5" y="4.5" width="17" height="0.6" fill="#fff" fill-opacity="0.25"/></svg>';
+        return (
+          "<svg " +
+          attrs +
+          '><path d="M3 9.5h18v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="#A77855"/><path d="M3.5 4.5h17a1 1 0 0 1 1 1V9.5h-19V5.5a1 1 0 0 1 1-1z" fill="#CB9970"/><rect x="3" y="9.2" width="18" height="0.8" fill="#000" fill-opacity="0.2"/><rect x="11" y="4.5" width="2" height="16" fill="#7A5238" fill-opacity="0.45"/><rect x="9.4" y="12.6" width="5.2" height="1.8" rx="0.9" fill="#3E2615"/><rect x="3.5" y="4.5" width="17" height="0.6" fill="#fff" fill-opacity="0.25"/></svg>'
+        );
     }
     return "";
   }
@@ -386,19 +653,37 @@
       var match = false;
       switch (view) {
         case "inbox":
-          if (t.sourceType === "calendar" && t.sourceDate && t.sourceDate <= today) match = true;
+          if (
+            t.sourceType === "calendar" &&
+            t.sourceDate &&
+            t.sourceDate <= today
+          )
+            match = true;
           break;
         case "today":
           if (t.scheduledDate && t.scheduledDate <= today) match = true;
           break;
         case "upcoming":
-          if (t.scheduledDate && t.scheduledDate > today || t.scheduledWeek && t.scheduledWeek > currentWeek || t.sourceType === "calendar" && t.sourceDate && t.sourceDate > today || t.sourceType === "calendar" && t.sourceWeek && t.sourceWeek > currentWeek) match = true;
+          if (
+            (t.scheduledDate && t.scheduledDate > today) ||
+            (t.scheduledWeek && t.scheduledWeek > currentWeek) ||
+            (t.sourceType === "calendar" &&
+              t.sourceDate &&
+              t.sourceDate > today) ||
+            (t.sourceType === "calendar" &&
+              t.sourceWeek &&
+              t.sourceWeek > currentWeek)
+          )
+            match = true;
           break;
         case "anytime":
           if (t.tags && t.tags.indexOf("#someday") >= 0) break;
           if (t.sourceType === "calendar") {
             if (t.sourceWeek && t.sourceWeek <= currentWeek) match = true;
-          } else if ((!t.scheduledDate || t.scheduledDate <= today) && (!t.scheduledWeek || t.scheduledWeek <= currentWeek)) {
+          } else if (
+            (!t.scheduledDate || t.scheduledDate <= today) &&
+            (!t.scheduledWeek || t.scheduledWeek <= currentWeek)
+          ) {
             match = true;
           }
           break;
@@ -409,7 +694,10 @@
       if (match) {
         if (needsDedup && t.blockId) {
           if (seenBlockIds[t.blockId]) {
-            if (t.sourceType === "note" && seenBlockIds[t.blockId].sourceType === "calendar") {
+            if (
+              t.sourceType === "note" &&
+              seenBlockIds[t.blockId].sourceType === "calendar"
+            ) {
               var idx = result.indexOf(seenBlockIds[t.blockId]);
               if (idx >= 0) result[idx] = t;
               seenBlockIds[t.blockId] = t;
@@ -426,23 +714,23 @@
   function getFilteredTasks(view) {
     var tasks = getTasksForView(view);
     if (State.filters.tag) {
-      tasks = tasks.filter(function(t) {
+      tasks = tasks.filter(function (t) {
         return t.tags && t.tags.indexOf(State.filters.tag) >= 0;
       });
     }
     if (State.filters.folder) {
-      tasks = tasks.filter(function(t) {
+      tasks = tasks.filter(function (t) {
         return (t.folderName || "") === State.filters.folder;
       });
     }
     if (State.filters.mention) {
-      tasks = tasks.filter(function(t) {
+      tasks = tasks.filter(function (t) {
         return t.mentions && t.mentions.indexOf(State.filters.mention) >= 0;
       });
     }
     if (State.filters.text) {
       var q = State.filters.text.toLowerCase();
-      tasks = tasks.filter(function(t) {
+      tasks = tasks.filter(function (t) {
         return t.content.toLowerCase().indexOf(q) >= 0;
       });
     }
@@ -462,35 +750,52 @@
       placeholders.push(html);
       return key;
     }
-    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(m, linkText, url) {
-      return placeholder('<a class="cl-link" href="' + url + '" target="_blank">' + linkText + "</a>");
+    s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function (m, linkText, url) {
+      return placeholder(
+        '<a class="cl-link" href="' +
+          url +
+          '" target="_blank">' +
+          linkText +
+          "</a>"
+      );
     });
-    s = s.replace(/\[\[([^\]]+)\]\]/g, function(m, linkText) {
+    s = s.replace(/\[\[([^\]]+)\]\]/g, function (m, linkText) {
       return placeholder('<span class="cl-wikilink">' + linkText + "</span>");
     });
-    s = s.replace(/(https?:\/\/[^\s<>\[\]]+)/g, function(m, url) {
-      return placeholder('<a class="cl-link" href="' + url + '" target="_blank">' + url + "</a>");
+    s = s.replace(/(https?:\/\/[^\s<>\[\]]+)/g, function (m, url) {
+      return placeholder(
+        '<a class="cl-link" href="' + url + '" target="_blank">' + url + "</a>"
+      );
     });
-    s = s.replace(/`([^`]+)`/g, function(m, code) {
+    s = s.replace(/`([^`]+)`/g, function (m, code) {
       return placeholder('<code class="cl-inline-code">' + code + "</code>");
     });
     s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-    s = s.replace(new RegExp("(?<!\\*)\\*(?!\\*)(.+?)(?<!\\*)\\*(?!\\*)", "g"), "<em>$1</em>");
+    s = s.replace(
+      new RegExp("(?<!\\*)\\*(?!\\*)(.+?)(?<!\\*)\\*(?!\\*)", "g"),
+      "<em>$1</em>"
+    );
     s = s.replace(/~~(.+?)~~/g, "<del>$1</del>");
     s = s.replace(/==(.+?)==/g, "<mark>$1</mark>");
-    s = s.replace(/\/\/\s.*$/g, function(m) {
+    s = s.replace(/\/\/\s.*$/g, function (m) {
       return placeholder('<span class="cl-comment">' + m + "</span>");
     });
-    s = s.replace(/\/\*.*?\*\//g, function(m) {
+    s = s.replace(/\/\*.*?\*\//g, function (m) {
       return placeholder('<span class="cl-comment">' + m + "</span>");
     });
-    s = s.replace(/\s*\^[\da-zA-Z]{4,}/g, function(m) {
+    s = s.replace(/\s*\^[\da-zA-Z]{4,}/g, function (m) {
       return placeholder(' <span class="cl-block-id">*</span>');
     });
-    s = s.replace(/(#[\p{L}\p{N}_\-\/]+)/gu, '<span class="cl-tag-inline">$1</span>');
-    s = s.replace(/(^|[\s(])(@(?!done|due|repeat)[\p{L}\p{N}_\-]+)/gu, function(m, pre, mention) {
-      return pre + '<span class="cl-mention-inline">' + mention + "</span>";
-    });
+    s = s.replace(
+      /(#[\p{L}\p{N}_\-\/]+)/gu,
+      '<span class="cl-tag-inline">$1</span>'
+    );
+    s = s.replace(
+      /(^|[\s(])(@(?!done|due|repeat)[\p{L}\p{N}_\-]+)/gu,
+      function (m, pre, mention) {
+        return pre + '<span class="cl-mention-inline">' + mention + "</span>";
+      }
+    );
     for (var i = 0; i < placeholders.length; i++) {
       s = s.replace("\0PH" + i + "\0", placeholders[i]);
     }
@@ -531,7 +836,8 @@
       }
     }
     var colCount = 0;
-    for (var r = 0; r < rows.length; r++) if (rows[r].length > colCount) colCount = rows[r].length;
+    for (var r = 0; r < rows.length; r++)
+      if (rows[r].length > colCount) colCount = rows[r].length;
     function cellStyle(col) {
       var align = alignments[col] || "left";
       return align === "left" ? "" : ' style="text-align:' + align + '"';
@@ -543,7 +849,8 @@
       html += "<thead><tr>";
       for (var h = 0; h < colCount; h++) {
         var headText = rows[0][h] || "";
-        html += "<th" + cellStyle(h) + ">" + renderInlineMarkdown(headText) + "</th>";
+        html +=
+          "<th" + cellStyle(h) + ">" + renderInlineMarkdown(headText) + "</th>";
       }
       html += "</tr></thead>";
     }
@@ -553,7 +860,8 @@
       html += "<tr>";
       for (var c = 0; c < colCount; c++) {
         var cellText = rows[br][c] || "";
-        html += "<td" + cellStyle(c) + ">" + renderInlineMarkdown(cellText) + "</td>";
+        html +=
+          "<td" + cellStyle(c) + ">" + renderInlineMarkdown(cellText) + "</td>";
       }
       html += "</tr>";
     }
@@ -578,9 +886,23 @@
     if (future) classes += " cl-future";
     var dragAttrs = "";
     if (options.lineIndex !== void 0) {
-      dragAttrs = ' data-line-index="' + options.lineIndex + '" data-indent="' + (options.indentLevel || 0) + '" data-child-count="' + (options.childCount || 0) + '"';
+      dragAttrs =
+        ' data-line-index="' +
+        options.lineIndex +
+        '" data-indent="' +
+        (options.indentLevel || 0) +
+        '" data-child-count="' +
+        (options.childCount || 0) +
+        '"';
     }
-    var html = '<div class="' + classes + '" data-task-id="' + esc(task.id) + '"' + dragAttrs + ">";
+    var html =
+      '<div class="' +
+      classes +
+      '" data-task-id="' +
+      esc(task.id) +
+      '"' +
+      dragAttrs +
+      ">";
     var cbClass = task.type === "checklist" ? "cl-cb cl-cb-square" : "cl-cb";
     if (task.status === "done") cbClass += " cl-cb-done";
     else if (task.status === "cancelled") cbClass += " cl-cb-cancelled";
@@ -593,7 +915,10 @@
     if (showStar && !isClosed && task.scheduledDate === State.today) {
       html += '<span class="cl-star">\u2B50</span> ';
     }
-    html += '<span class="cl-task-text">' + renderInlineMarkdown(task.content) + "</span>";
+    html +=
+      '<span class="cl-task-text">' +
+      renderInlineMarkdown(task.content) +
+      "</span>";
     html += "</div>";
     var metaParts = [];
     if (showSource && task.noteTitle && task.sourceType === "note") {
@@ -601,18 +926,36 @@
     }
     var repeatBadge = "";
     if (task.repeat) {
-      repeatBadge = ' <span class="cl-repeat-badge" title="Repeats: ' + esc(task.repeat) + '"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 21v-5h5"/></svg><span class="cl-repeat-text">' + esc(task.repeat) + "</span></span>";
+      repeatBadge =
+        ' <span class="cl-repeat-badge" title="Repeats: ' +
+        esc(task.repeat) +
+        '"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/><path d="M3 21v-5h5"/></svg><span class="cl-repeat-text">' +
+        esc(task.repeat) +
+        "</span></span>";
     }
     var badgeSep = repeatBadge ? "  " : "";
     if (isOverdue && task.scheduledDate) {
-      metaParts.push('<span class="cl-overdue-date">' + task.scheduledDate + "</span>" + badgeSep + repeatBadge);
-    } else if (task.scheduledDate && (alwaysShowDate || task.scheduledDate !== State.today)) {
+      metaParts.push(
+        '<span class="cl-overdue-date">' +
+          task.scheduledDate +
+          "</span>" +
+          badgeSep +
+          repeatBadge
+      );
+    } else if (
+      task.scheduledDate &&
+      (alwaysShowDate || task.scheduledDate !== State.today)
+    ) {
       metaParts.push(task.scheduledDate + badgeSep + repeatBadge);
     } else if (repeatBadge) {
       metaParts.push(repeatBadge);
     }
     if (task.isDelegated && task.mentions.length > 0) {
-      metaParts.push('delegated to <span class="cl-mention-inline">' + esc(task.mentions[0]) + "</span>");
+      metaParts.push(
+        'delegated to <span class="cl-mention-inline">' +
+          esc(task.mentions[0]) +
+          "</span>"
+      );
     }
     if (task.children && task.children.length > 0) {
       var hasNotes = false;
@@ -627,24 +970,46 @@
         } else if (task.children[ci].type === "task") subCount++;
       }
       var indicators = [];
-      if (hasNotes) indicators.push('<span class="cl-child-icon" title="Has notes">\u2261</span>');
-      if (clCount > 0) indicators.push('<span class="cl-child-icon cl-child-checklist" title="Checklist">\u2611 ' + clDone + "/" + clCount + "</span>");
-      if (subCount > 0) indicators.push('<span class="cl-child-icon" title="Sub-tasks">\u2937 ' + subCount + "</span>");
+      if (hasNotes)
+        indicators.push(
+          '<span class="cl-child-icon" title="Has notes">\u2261</span>'
+        );
+      if (clCount > 0)
+        indicators.push(
+          '<span class="cl-child-icon cl-child-checklist" title="Checklist">\u2611 ' +
+            clDone +
+            "/" +
+            clCount +
+            "</span>"
+        );
+      if (subCount > 0)
+        indicators.push(
+          '<span class="cl-child-icon" title="Sub-tasks">\u2937 ' +
+            subCount +
+            "</span>"
+        );
       if (indicators.length > 0) metaParts = metaParts.concat(indicators);
     }
     if (metaParts.length > 0) {
-      html += '<div class="cl-task-meta">' + metaParts.join("  &middot; ") + "</div>";
+      html +=
+        '<div class="cl-task-meta">' + metaParts.join("  &middot; ") + "</div>";
     }
     html += "</div>";
     var badges = "";
     if (task.priority > 0 && !isClosed) {
       var priLabels = ["", "!", "!!", "!!!"];
-      badges += '<span class="cl-pri cl-pri-' + task.priority + '">' + priLabels[task.priority] + "</span>";
+      badges +=
+        '<span class="cl-pri cl-pri-' +
+        task.priority +
+        '">' +
+        priLabels[task.priority] +
+        "</span>";
     }
     if (task.tags) {
       for (var ti = 0; ti < task.tags.length; ti++) {
         if (task.tags[ti] !== "#someday") {
-          badges += '<span class="cl-tag-pill">' + esc(task.tags[ti]) + "</span>";
+          badges +=
+            '<span class="cl-tag-pill">' + esc(task.tags[ti]) + "</span>";
         }
       }
     }
@@ -664,16 +1029,33 @@
       var activeTag = State.filters.tag;
       var activeFolder = State.filters.folder;
       var noFilter = !activeTag && !activeFolder;
-      html += '<span class="cl-filter-pill' + (noFilter ? " cl-filter-active" : "") + '" data-action="clearTaskFilters">All</span>';
+      html +=
+        '<span class="cl-filter-pill' +
+        (noFilter ? " cl-filter-active" : "") +
+        '" data-action="clearTaskFilters">All</span>';
       for (var i = 0; i < tags.length; i++) {
         var active = activeTag === tags[i] ? " cl-filter-active" : "";
-        html += '<span class="cl-filter-pill' + active + '" data-action="filterTag" data-tag="' + esc(tags[i]) + '">' + esc(tags[i]) + "</span>";
+        html +=
+          '<span class="cl-filter-pill' +
+          active +
+          '" data-action="filterTag" data-tag="' +
+          esc(tags[i]) +
+          '">' +
+          esc(tags[i]) +
+          "</span>";
       }
       if (folders.length >= 2) {
         if (tags.length > 0) html += '<span class="cl-filter-divider"></span>';
         for (var fi = 0; fi < folders.length; fi++) {
           var fActive = activeFolder === folders[fi] ? " cl-filter-active" : "";
-          html += '<span class="cl-filter-pill cl-filter-pill-folder' + fActive + '" data-action="filterFolder" data-folder="' + esc(folders[fi]) + '">' + esc(folders[fi]) + "</span>";
+          html +=
+            '<span class="cl-filter-pill cl-filter-pill-folder' +
+            fActive +
+            '" data-action="filterFolder" data-folder="' +
+            esc(folders[fi]) +
+            '">' +
+            esc(folders[fi]) +
+            "</span>";
         }
       }
     }
@@ -689,7 +1071,11 @@
     for (var i = 0; i < tasks.length; i++) {
       if (tasks[i].tags) {
         for (var j = 0; j < tasks[i].tags.length; j++) {
-          if (tasks[i].tags[j] !== "#someday" && tasks[i].tags[j] !== "#evening") tagMap[tasks[i].tags[j]] = true;
+          if (
+            tasks[i].tags[j] !== "#someday" &&
+            tasks[i].tags[j] !== "#evening"
+          )
+            tagMap[tasks[i].tags[j]] = true;
         }
       }
     }
@@ -706,13 +1092,21 @@
   function renderGroupingToggle(view) {
     var options = [];
     if (view === "today") options = ["note", "folder", "priority"];
-    else if (view === "anytime" || view === "someday") options = ["folder", "note", "priority"];
+    else if (view === "anytime" || view === "someday")
+      options = ["folder", "note", "priority"];
     else return "";
     var html = '<div class="cl-group-toggle">';
     html += '<span class="cl-group-label">Group:</span>';
     for (var i = 0; i < options.length; i++) {
       var active = State.grouping === options[i] ? " cl-group-btn-active" : "";
-      html += '<span class="cl-group-btn' + active + '" data-action="setGrouping" data-grouping="' + options[i] + '">' + capitalize(options[i]) + "</span>";
+      html +=
+        '<span class="cl-group-btn' +
+        active +
+        '" data-action="setGrouping" data-grouping="' +
+        options[i] +
+        '">' +
+        capitalize(options[i]) +
+        "</span>";
     }
     html += "</div>";
     return html;
@@ -749,16 +1143,19 @@
     }
     if (grouping === "priority") {
       var priRank = { "!!!": 3, "!!": 2, "!": 1, "No Priority": 0 };
-      groupOrder.sort(function(a, b) {
+      groupOrder.sort(function (a, b) {
         return (priRank[b] || 0) - (priRank[a] || 0);
       });
     }
     if (grouping === "folder" || grouping === "note") {
-      groupOrder.sort(function(a, b) {
+      groupOrder.sort(function (a, b) {
         var aw = groups[a][0] && groups[a][0].sourceWeek ? 1 : 0;
         var bw = groups[b][0] && groups[b][0].sourceWeek ? 1 : 0;
         if (aw !== bw) return bw - aw;
-        if (aw && bw) return (groups[a][0].sourceWeek || "").localeCompare(groups[b][0].sourceWeek || "");
+        if (aw && bw)
+          return (groups[a][0].sourceWeek || "").localeCompare(
+            groups[b][0].sourceWeek || ""
+          );
         return 0;
       });
     }
@@ -767,10 +1164,23 @@
       var name = groupOrder[gi];
       var group = groups[groupOrder[gi]];
       var group0 = group[0];
-      var isWeekGroup = (grouping === "folder" || grouping === "note") && group0 && group0.sourceWeek;
-      var displayName = grouping === "date" ? formatDateHeader(name) : isWeekGroup ? formatWeekHeader(group0.sourceWeek) : name;
+      var isWeekGroup =
+        (grouping === "folder" || grouping === "note") &&
+        group0 &&
+        group0.sourceWeek;
+      var displayName =
+        grouping === "date"
+          ? formatDateHeader(name)
+          : isWeekGroup
+            ? formatWeekHeader(group0.sourceWeek)
+            : name;
       if (grouping === "note" && group[0] && group[0].noteFilename) {
-        html += '<div class="cl-group-header cl-group-clickable" data-action="jumpToProjectNote" data-filename="' + esc(group[0].noteFilename) + '">' + esc(displayName) + "</div>";
+        html +=
+          '<div class="cl-group-header cl-group-clickable" data-action="jumpToProjectNote" data-filename="' +
+          esc(group[0].noteFilename) +
+          '">' +
+          esc(displayName) +
+          "</div>";
       } else {
         html += '<div class="cl-group-header">' + esc(displayName) + "</div>";
       }
@@ -784,7 +1194,11 @@
     return html;
   }
   function renderQuickAdd(view) {
-    return '<div class="cl-quick-add" data-view="' + view + '"><span class="cl-quick-add-icon">+</span><input class="cl-quick-add-input" placeholder="New Task" data-action="quickAdd"/></div>';
+    return (
+      '<div class="cl-quick-add" data-view="' +
+      view +
+      '"><span class="cl-quick-add-icon">+</span><input class="cl-quick-add-input" placeholder="New Task" data-action="quickAdd"/></div>'
+    );
   }
 
   // src/webview/lib/clarity-flags.js
@@ -820,10 +1234,14 @@
     for (var i = 0; i < (paragraphs || []).length; i++) {
       var p = paragraphs[i];
       if (p.type === "title") {
-        var hText = (p.content || "").trim().replace(/\s*…\s*$/, "").replace(/\s*👀\s*$/, "");
+        var hText = (p.content || "")
+          .trim()
+          .replace(/\s*…\s*$/, "")
+          .replace(/\s*👀\s*$/, "");
         if (/^[-*_]{3,}$/.test(hText)) continue;
         var level = p.headingLevel || 1;
-        while (stack.length > 0 && stack[stack.length - 1].level >= level) stack.pop();
+        while (stack.length > 0 && stack[stack.length - 1].level >= level)
+          stack.pop();
         stats.set(p.lineIndex, { total: 0, done: 0 });
         stack.push({ level, lineIndex: p.lineIndex });
         continue;
@@ -843,18 +1261,67 @@
   function buildHeadingProgressSVG(done, total) {
     if (!total) return "";
     var pct = done / total;
-    var size = 18, cx = 9, cy = 9, r = 7, sw = 2.25;
-    var html = '<svg class="cl-h-progress" viewBox="0 0 ' + size + " " + size + '" width="' + size + '" height="' + size + '" aria-hidden="true">';
-    html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="none" stroke="currentColor" stroke-width="' + sw + '" opacity="0.4"/>';
+    var size = 18,
+      cx = 9,
+      cy = 9,
+      r = 7,
+      sw = 2.25;
+    var html =
+      '<svg class="cl-h-progress" viewBox="0 0 ' +
+      size +
+      " " +
+      size +
+      '" width="' +
+      size +
+      '" height="' +
+      size +
+      '" aria-hidden="true">';
+    html +=
+      '<circle cx="' +
+      cx +
+      '" cy="' +
+      cy +
+      '" r="' +
+      r +
+      '" fill="none" stroke="currentColor" stroke-width="' +
+      sw +
+      '" opacity="0.4"/>';
     if (pct >= 1) {
-      html += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r + sw / 2) + '" fill="currentColor"/>';
-      html += '<path d="M 5.5 9.2 L 8 11.6 L 12.7 6.6" fill="none" stroke="var(--cl-bg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      html +=
+        '<circle cx="' +
+        cx +
+        '" cy="' +
+        cy +
+        '" r="' +
+        (r + sw / 2) +
+        '" fill="currentColor"/>';
+      html +=
+        '<path d="M 5.5 9.2 L 8 11.6 L 12.7 6.6" fill="none" stroke="var(--cl-bg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
     } else if (pct > 0) {
       var angle = 2 * Math.PI * pct;
       var endX = cx + r * Math.sin(angle);
       var endY = cy - r * Math.cos(angle);
       var largeArc = pct > 0.5 ? 1 : 0;
-      var d = "M " + cx + " " + cy + " L " + cx + " " + (cy - r) + " A " + r + " " + r + " 0 " + largeArc + " 1 " + endX.toFixed(3) + " " + endY.toFixed(3) + " Z";
+      var d =
+        "M " +
+        cx +
+        " " +
+        cy +
+        " L " +
+        cx +
+        " " +
+        (cy - r) +
+        " A " +
+        r +
+        " " +
+        r +
+        " 0 " +
+        largeArc +
+        " 1 " +
+        endX.toFixed(3) +
+        " " +
+        endY.toFixed(3) +
+        " Z";
       html += '<path d="' + d + '" fill="currentColor"/>';
     }
     html += "</svg>";
@@ -873,7 +1340,9 @@
         firstH1Skipped = true;
         continue;
       }
-      var text = (p.content || "").replace(/\s*…\s*$/, "").replace(/\s*👀\s*$/, "");
+      var text = (p.content || "")
+        .replace(/\s*…\s*$/, "")
+        .replace(/\s*👀\s*$/, "");
       if (/^[-*_]{3,}$/.test(text.trim())) continue;
       out.push({ lineIndex: p.lineIndex, level, text });
     }
@@ -888,10 +1357,18 @@
       el.innerHTML = "";
       return;
     }
-    var html = '<div class="cl-toc-title">Contents</div><div class="cl-toc-list">';
+    var html =
+      '<div class="cl-toc-title">Contents</div><div class="cl-toc-list">';
     for (var i = 0; i < headings.length; i++) {
       var h = headings[i];
-      html += '<button class="cl-toc-item cl-toc-level-' + h.level + '" data-action="scrollToHeading" data-line-index="' + h.lineIndex + '">' + renderInlineMarkdown(h.text) + "</button>";
+      html +=
+        '<button class="cl-toc-item cl-toc-level-' +
+        h.level +
+        '" data-action="scrollToHeading" data-line-index="' +
+        h.lineIndex +
+        '">' +
+        renderInlineMarkdown(h.text) +
+        "</button>";
     }
     html += "</div>";
     el.innerHTML = html;
@@ -909,10 +1386,17 @@
   function scrollToHeading(lineIndex) {
     var scroller = getScroller();
     if (!scroller) return;
-    var heading = scroller.querySelector('.cl-note-heading[data-line-index="' + lineIndex + '"]');
+    var heading = scroller.querySelector(
+      '.cl-note-heading[data-line-index="' + lineIndex + '"]'
+    );
     if (!heading) return;
-    var delta = heading.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
-    scroller.scrollTo({ top: scroller.scrollTop + delta - 20, behavior: "smooth" });
+    var delta =
+      heading.getBoundingClientRect().top -
+      scroller.getBoundingClientRect().top;
+    scroller.scrollTo({
+      top: scroller.scrollTop + delta - 20,
+      behavior: "smooth"
+    });
   }
   var _spyScroller = null;
   function attachTocScrollSpy() {
@@ -920,9 +1404,9 @@
     if (!scroller || scroller === _spyScroller) return;
     _spyScroller = scroller;
     var debounce = null;
-    scroller.addEventListener("scroll", function() {
+    scroller.addEventListener("scroll", function () {
       if (debounce) return;
-      debounce = setTimeout(function() {
+      debounce = setTimeout(function () {
         debounce = null;
         updateActiveTocItem();
       }, 50);
@@ -947,7 +1431,8 @@
     }
     var items = sidebar.querySelectorAll(".cl-toc-item");
     for (var j = 0; j < items.length; j++) {
-      if (items[j].dataset.lineIndex === activeLineIndex) items[j].classList.add("active");
+      if (items[j].dataset.lineIndex === activeLineIndex)
+        items[j].classList.add("active");
       else items[j].classList.remove("active");
     }
   }
@@ -957,7 +1442,7 @@
     var el = document.getElementById("cl-right-sidebar");
     if (!el) return;
     _clickAttached = true;
-    el.addEventListener("click", function(e) {
+    el.addEventListener("click", function (e) {
       var btn = e.target.closest('[data-action="scrollToHeading"]');
       if (!btn) return;
       var idx = parseInt(btn.dataset.lineIndex, 10);
@@ -974,10 +1459,13 @@
     if (!contentRoot) return;
     var prev = contentRoot.querySelectorAll(".cl-dimmed");
     for (var p = 0; p < prev.length; p++) prev[p].classList.remove("cl-dimmed");
-    var focusedNodes = contentRoot.querySelectorAll('.cl-note-heading[data-focused="true"]');
+    var focusedNodes = contentRoot.querySelectorAll(
+      '.cl-note-heading[data-focused="true"]'
+    );
     if (focusedNodes.length === 0) return;
     var focusedSet = /* @__PURE__ */ new Set();
-    for (var fi = 0; fi < focusedNodes.length; fi++) focusedSet.add(focusedNodes[fi]);
+    for (var fi = 0; fi < focusedNodes.length; fi++)
+      focusedSet.add(focusedNodes[fi]);
     function containsFocused(el) {
       if (focusedSet.has(el)) return true;
       return !!el.querySelector('.cl-note-heading[data-focused="true"]');
@@ -987,7 +1475,8 @@
       for (var i = 0; i < children.length; i++) {
         var c = children[i];
         var next = children[i + 1];
-        var nextIsBody = next && next.classList && next.classList.contains("cl-section-body");
+        var nextIsBody =
+          next && next.classList && next.classList.contains("cl-section-body");
         if (c.classList && c.classList.contains("cl-note-heading")) {
           if (focusedSet.has(c)) {
             if (nextIsBody) i++;
@@ -1028,7 +1517,8 @@
   function renderCurrentView() {
     var el = document.getElementById("cl-main");
     if (!el) return;
-    var prevScroller = el.querySelector(".cl-note-content") || el.querySelector(".cl-task-list");
+    var prevScroller =
+      el.querySelector(".cl-note-content") || el.querySelector(".cl-task-list");
     var prevScrollTop = prevScroller ? prevScroller.scrollTop : 0;
     var prevView = el.getAttribute("data-rendered-view");
     var html = "";
@@ -1058,14 +1548,16 @@
     el.setAttribute("data-rendered-view", State.currentView);
     attachMainEventListeners();
     if (prevView === State.currentView && prevScrollTop > 0) {
-      var newScroller = el.querySelector(".cl-note-content") || el.querySelector(".cl-task-list");
+      var newScroller =
+        el.querySelector(".cl-note-content") ||
+        el.querySelector(".cl-task-list");
       if (newScroller) newScroller.scrollTop = prevScrollTop;
     }
     if (State.currentView === "note") {
-      var __fm = State.noteContent && State.noteContent.frontmatter || {};
+      var __fm = (State.noteContent && State.noteContent.frontmatter) || {};
       var __flags = parseClarityFlags(__fm);
       if (__flags.toc) {
-        renderToc(State.noteContent && State.noteContent.paragraphs || []);
+        renderToc((State.noteContent && State.noteContent.paragraphs) || []);
         attachTocScrollSpy();
       } else {
         hideToc();
@@ -1091,13 +1583,25 @@
   function renderRangeDropdown(action, currentDays, label) {
     var opts = RANGE_OPTIONS.slice();
     if (opts.indexOf(currentDays) < 0) opts.push(currentDays);
-    opts.sort(function(a, b) {
+    opts.sort(function (a, b) {
       return a - b;
     });
-    var html = '<select class="cl-range-dropdown" data-action="' + action + '" title="' + label + '">';
+    var html =
+      '<select class="cl-range-dropdown" data-action="' +
+      action +
+      '" title="' +
+      label +
+      '">';
     for (var i = 0; i < opts.length; i++) {
       var sel = opts[i] === currentDays ? " selected" : "";
-      html += '<option value="' + opts[i] + '"' + sel + ">" + opts[i] + " days</option>";
+      html +=
+        '<option value="' +
+        opts[i] +
+        '"' +
+        sel +
+        ">" +
+        opts[i] +
+        " days</option>";
     }
     html += "</select>";
     return html;
@@ -1105,14 +1609,26 @@
   function renderInboxView() {
     var tasks = getFilteredTasks("inbox");
     var html = '<div class="cl-view-header">';
-    html += '<div class="cl-view-title"><span class="cl-view-icon">' + getViewIcon("inbox", 24) + "</span><h1>Inbox</h1>";
+    html +=
+      '<div class="cl-view-title"><span class="cl-view-icon">' +
+      getViewIcon("inbox", 24) +
+      "</span><h1>Inbox</h1>";
     html += '<span class="cl-view-count">' + tasks.length + "</span>";
-    html += renderRangeDropdown("setInboxLookback", State.inboxLookbackDays, "How far back to scan daily notes");
+    html += renderRangeDropdown(
+      "setInboxLookback",
+      State.inboxLookbackDays,
+      "How far back to scan daily notes"
+    );
     html += "</div></div>";
     html += renderFilterBar(tasks);
     if (State.movedFromInbox.length > 0) {
       html += '<div class="cl-moved-banner">';
-      html += "<span>" + State.movedFromInbox.length + " task" + (State.movedFromInbox.length > 1 ? "s" : "") + " moved out of the Inbox</span>";
+      html +=
+        "<span>" +
+        State.movedFromInbox.length +
+        " task" +
+        (State.movedFromInbox.length > 1 ? "s" : "") +
+        " moved out of the Inbox</span>";
       html += '<span class="cl-moved-ok" data-action="dismissMoved">OK</span>';
       html += "</div>";
     }
@@ -1128,12 +1644,13 @@
       }
       groups[key].push(tasks[i]);
     }
-    groupOrder.sort(function(a, b) {
+    groupOrder.sort(function (a, b) {
       return b.localeCompare(a);
     });
     for (var gi = 0; gi < groupOrder.length; gi++) {
       var date = groupOrder[gi];
-      html += '<div class="cl-group-header">' + formatDateHeader(date) + "</div>";
+      html +=
+        '<div class="cl-group-header">' + formatDateHeader(date) + "</div>";
       var gTasks = groups[date];
       for (var ti = 0; ti < gTasks.length; ti++) {
         html += renderTaskRow(gTasks[ti], { showSource: false });
@@ -1154,7 +1671,7 @@
     }
     var repeatFilter = State.filters.todayRepeat || "all";
     if (hasAnyRepeat && repeatFilter !== "all") {
-      tasks = tasks.filter(function(t2) {
+      tasks = tasks.filter(function (t2) {
         return repeatFilter === "repeating" ? !!t2.repeat : !t2.repeat;
       });
     }
@@ -1166,12 +1683,23 @@
         { key: "non-repeating", label: "Non-repeating" }
       ];
       for (var roi = 0; roi < repeatOpts.length; roi++) {
-        var rActive = repeatFilter === repeatOpts[roi].key ? " cl-filter-active" : "";
-        repeatExtras += '<span class="cl-filter-pill' + rActive + '" data-action="filterTodayRepeat" data-repeat="' + repeatOpts[roi].key + '">' + repeatOpts[roi].label + "</span>";
+        var rActive =
+          repeatFilter === repeatOpts[roi].key ? " cl-filter-active" : "";
+        repeatExtras +=
+          '<span class="cl-filter-pill' +
+          rActive +
+          '" data-action="filterTodayRepeat" data-repeat="' +
+          repeatOpts[roi].key +
+          '">' +
+          repeatOpts[roi].label +
+          "</span>";
       }
     }
     var html = '<div class="cl-view-header">';
-    html += '<div class="cl-view-title"><span class="cl-view-icon">' + getViewIcon("today", 24) + "</span><h1>Today</h1>";
+    html +=
+      '<div class="cl-view-title"><span class="cl-view-icon">' +
+      getViewIcon("today", 24) +
+      "</span><h1>Today</h1>";
     html += '<span class="cl-view-count">' + tasks.length + "</span></div>";
     html += renderGroupingToggle("today");
     html += "</div>";
@@ -1189,14 +1717,19 @@
       else dayTasks.push(t);
     }
     if (overdue.length > 0) {
-      html += '<div class="cl-group-header cl-overdue-header"><span>Overdue</span><span class="cl-overdue-reschedule" data-action="rescheduleAllOverdue" title="Move all overdue tasks to today">Reschedule</span></div>';
+      html +=
+        '<div class="cl-group-header cl-overdue-header"><span>Overdue</span><span class="cl-overdue-reschedule" data-action="rescheduleAllOverdue" title="Move all overdue tasks to today">Reschedule</span></div>';
       for (var oi = 0; oi < overdue.length; oi++) {
-        html += renderTaskRow(overdue[oi], { isOverdue: true, showSource: true });
+        html += renderTaskRow(overdue[oi], {
+          isOverdue: true,
+          showSource: true
+        });
       }
     }
     html += renderGroupedTasks(dayTasks, State.grouping);
     if (eveningTasks.length > 0) {
-      html += '<div class="cl-group-header cl-evening-header"><svg class="cl-evening-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>This Evening</span></div>';
+      html +=
+        '<div class="cl-group-header cl-evening-header"><svg class="cl-evening-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg><span>This Evening</span></div>';
       for (var ei = 0; ei < eveningTasks.length; ei++) {
         html += renderTaskRow(eveningTasks[ei], { showSource: true });
       }
@@ -1207,14 +1740,23 @@
   function renderUpcomingView() {
     var tasks = getFilteredTasks("upcoming");
     var html = '<div class="cl-view-header">';
-    html += '<div class="cl-view-title"><span class="cl-view-icon">' + getViewIcon("upcoming", 24) + "</span><h1>Upcoming</h1>";
-    html += renderRangeDropdown("setUpcomingLookahead", State.upcomingLookaheadDays, "How far ahead to scan daily notes");
+    html +=
+      '<div class="cl-view-title"><span class="cl-view-icon">' +
+      getViewIcon("upcoming", 24) +
+      "</span><h1>Upcoming</h1>";
+    html += renderRangeDropdown(
+      "setUpcomingLookahead",
+      State.upcomingLookaheadDays,
+      "How far ahead to scan daily notes"
+    );
     html += "</div></div>";
     html += renderFilterBar(tasks);
     html += renderQuickAdd("upcoming");
     html += '<div class="cl-task-list">';
     function upcomingDateOf(t) {
-      return t.scheduledDate || (t.sourceType === "calendar" ? t.sourceDate : null);
+      return (
+        t.scheduledDate || (t.sourceType === "calendar" ? t.sourceDate : null)
+      );
     }
     function upcomingWeekOf(t) {
       return t.scheduledWeek || t.sourceWeek || null;
@@ -1222,10 +1764,11 @@
     var dayTasks = [];
     var weekTasks = [];
     for (var i = 0; i < tasks.length; i++) {
-      if (upcomingWeekOf(tasks[i]) && !upcomingDateOf(tasks[i])) weekTasks.push(tasks[i]);
+      if (upcomingWeekOf(tasks[i]) && !upcomingDateOf(tasks[i]))
+        weekTasks.push(tasks[i]);
       else dayTasks.push(tasks[i]);
     }
-    dayTasks.sort(function(a, b) {
+    dayTasks.sort(function (a, b) {
       return (upcomingDateOf(a) || "").localeCompare(upcomingDateOf(b) || "");
     });
     var dayGroups = {};
@@ -1239,13 +1782,16 @@
       dayGroups[dk].push(dayTasks[di]);
     }
     for (var dgi = 0; dgi < dayOrder.length; dgi++) {
-      html += '<div class="cl-group-header cl-upcoming-date">' + formatUpcomingDateHeader(dayOrder[dgi]) + "</div>";
+      html +=
+        '<div class="cl-group-header cl-upcoming-date">' +
+        formatUpcomingDateHeader(dayOrder[dgi]) +
+        "</div>";
       var dg = dayGroups[dayOrder[dgi]];
       for (var dti = 0; dti < dg.length; dti++) {
         html += renderTaskRow(dg[dti], { showSource: true });
       }
     }
-    weekTasks.sort(function(a, b) {
+    weekTasks.sort(function (a, b) {
       return (upcomingWeekOf(a) || "").localeCompare(upcomingWeekOf(b) || "");
     });
     var weekGroups = {};
@@ -1259,7 +1805,10 @@
       weekGroups[wk].push(weekTasks[wi]);
     }
     for (var wgi = 0; wgi < weekOrder.length; wgi++) {
-      html += '<div class="cl-group-header">' + formatWeekHeader(weekOrder[wgi]) + "</div>";
+      html +=
+        '<div class="cl-group-header">' +
+        formatWeekHeader(weekOrder[wgi]) +
+        "</div>";
       var wg = weekGroups[weekOrder[wgi]];
       for (var wti = 0; wti < wg.length; wti++) {
         html += renderTaskRow(wg[wti], { showSource: true });
@@ -1271,7 +1820,10 @@
   function renderAnytimeView() {
     var tasks = getFilteredTasks("anytime");
     var html = '<div class="cl-view-header">';
-    html += '<div class="cl-view-title"><span class="cl-view-icon">' + getViewIcon("anytime", 24) + "</span><h1>Anytime</h1>";
+    html +=
+      '<div class="cl-view-title"><span class="cl-view-icon">' +
+      getViewIcon("anytime", 24) +
+      "</span><h1>Anytime</h1>";
     html += '<span class="cl-view-count">' + tasks.length + "</span></div>";
     html += renderGroupingToggle("anytime");
     html += "</div>";
@@ -1293,7 +1845,10 @@
     }
     var totalCount = tasks.length + somedayNotes.length + pausedNotes.length;
     var html = '<div class="cl-view-header">';
-    html += '<div class="cl-view-title"><span class="cl-view-icon">' + getViewIcon("someday", 24) + "</span><h1>Someday</h1>";
+    html +=
+      '<div class="cl-view-title"><span class="cl-view-icon">' +
+      getViewIcon("someday", 24) +
+      "</span><h1>Someday</h1>";
     html += '<span class="cl-view-count">' + totalCount + "</span></div>";
     html += renderGroupingToggle("someday");
     html += "</div>";
@@ -1301,11 +1856,21 @@
     html += renderQuickAdd("someday");
     function renderProjectGroup(label, list) {
       if (!list.length) return "";
-      var out = '<div class="cl-someday-projects-title">' + esc(label) + "</div>";
+      var out =
+        '<div class="cl-someday-projects-title">' + esc(label) + "</div>";
       for (var spi = 0; spi < list.length; spi++) {
         var sn2 = list[spi];
         var sfolder = (sn2.filename || "").replace(/\/[^/]+$/, "");
-        out += '<div class="cl-someday-project" data-action="jumpToProjectNote" data-filename="' + esc(sn2.filename) + '"><span class="cl-someday-project-icon">' + renderProjectIcon(sn2, 18) + '</span><span class="cl-someday-project-title">' + esc(sn2.title || "") + '</span><span class="cl-someday-project-folder">' + esc(sfolder) + "</span></div>";
+        out +=
+          '<div class="cl-someday-project" data-action="jumpToProjectNote" data-filename="' +
+          esc(sn2.filename) +
+          '"><span class="cl-someday-project-icon">' +
+          renderProjectIcon(sn2, 18) +
+          '</span><span class="cl-someday-project-title">' +
+          esc(sn2.title || "") +
+          '</span><span class="cl-someday-project-folder">' +
+          esc(sfolder) +
+          "</span></div>";
       }
       return out;
     }
@@ -1322,7 +1887,8 @@
   }
   function renderNoteView() {
     var nc = State.noteContent;
-    if (!nc) return '<div class="cl-view-header"><div class="cl-view-title"><h1>Loading...</h1></div></div>';
+    if (!nc)
+      return '<div class="cl-view-header"><div class="cl-view-title"><h1>Loading...</h1></div></div>';
     var paras = nc.paragraphs || [];
     var fm = nc.frontmatter || {};
     var flags = parseClarityFlags(fm);
@@ -1340,38 +1906,77 @@
     var html = '<div class="cl-view-header">';
     html += '<div class="cl-view-title">';
     var noteReviewDueDays = reviewDueDaysFromFm(fm);
-    html += renderProjectIcon({
-      noteType: isArea ? "area" : "project",
-      bgColorDark: nc.bgColorDark,
-      taskCount,
-      doneCount,
-      status: fm.status,
-      reviewDueDays: noteReviewDueDays
-    }, 24);
-    html += '<h1 class="cl-note-title-link" data-action="openInEditor" data-filename="' + esc(nc.filename) + '">' + esc(nc.title) + "</h1>";
+    html += renderProjectIcon(
+      {
+        noteType: isArea ? "area" : "project",
+        bgColorDark: nc.bgColorDark,
+        taskCount,
+        doneCount,
+        status: fm.status,
+        reviewDueDays: noteReviewDueDays
+      },
+      24
+    );
+    html +=
+      '<h1 class="cl-note-title-link" data-action="openInEditor" data-filename="' +
+      esc(nc.filename) +
+      '">' +
+      esc(nc.title) +
+      "</h1>";
     html += '<div class="cl-project-menu-wrap">';
-    html += '<button class="cl-refresh-btn cl-meta-btn" data-action="toggleProjectMenu" title="Project actions"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>';
+    html +=
+      '<button class="cl-refresh-btn cl-meta-btn" data-action="toggleProjectMenu" title="Project actions"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>';
     html += "</div>";
     html += "</div>";
     var folderPath = (nc.filename || "").replace(/\/[^/]+$/, "");
-    html += '<div class="cl-note-breadcrumb">' + esc(folderPath) + (isArea ? "" : " &middot; " + doneCount + "/" + taskCount + " done") + "</div>";
+    html +=
+      '<div class="cl-note-breadcrumb">' +
+      esc(folderPath) +
+      (isArea ? "" : " &middot; " + doneCount + "/" + taskCount + " done") +
+      "</div>";
     if (fm.due) {
-      html += '<div class="cl-note-deadline" data-action="openNoteMetaModal" title="Edit deadline">' + buildDeadlineBadgeVerbose(fm.due) + "</div>";
+      html +=
+        '<div class="cl-note-deadline" data-action="openNoteMetaModal" title="Edit deadline">' +
+        buildDeadlineBadgeVerbose(fm.due) +
+        "</div>";
     }
     html += '<div class="cl-note-filters">';
     html += '<div class="cl-filter-bar" style="padding:0;">';
     var statusFilters = ["all", "open", "done"];
     for (var sf = 0; sf < statusFilters.length; sf++) {
-      var sfActive = (State.filters.noteStatus || "all") === statusFilters[sf] ? " cl-filter-active" : "";
-      html += '<span class="cl-filter-pill' + sfActive + '" data-action="filterNoteStatus" data-status="' + statusFilters[sf] + '">' + capitalize(statusFilters[sf]) + "</span>";
+      var sfActive =
+        (State.filters.noteStatus || "all") === statusFilters[sf]
+          ? " cl-filter-active"
+          : "";
+      html +=
+        '<span class="cl-filter-pill' +
+        sfActive +
+        '" data-action="filterNoteStatus" data-status="' +
+        statusFilters[sf] +
+        '">' +
+        capitalize(statusFilters[sf]) +
+        "</span>";
     }
     html += "</div>";
-    html += '<div class="cl-tasks-only-toggle' + (State.filters.hideFuture ? " cl-filter-active" : "") + '" data-action="toggleHideFuture" title="Hide tasks scheduled for a future date">' + (State.filters.hideFuture ? "\u2611" : "\u2610") + " Hide upcoming</div>";
-    html += '<div class="cl-tasks-only-toggle' + (State.tasksOnly ? " cl-filter-active" : "") + '" data-action="toggleTasksOnly">' + (State.tasksOnly ? "\u2611" : "\u2610") + " Tasks only</div>";
+    html +=
+      '<div class="cl-tasks-only-toggle' +
+      (State.filters.hideFuture ? " cl-filter-active" : "") +
+      '" data-action="toggleHideFuture" title="Hide tasks scheduled for a future date">' +
+      (State.filters.hideFuture ? "\u2611" : "\u2610") +
+      " Hide upcoming</div>";
+    html +=
+      '<div class="cl-tasks-only-toggle' +
+      (State.tasksOnly ? " cl-filter-active" : "") +
+      '" data-action="toggleTasksOnly">' +
+      (State.tasksOnly ? "\u2611" : "\u2610") +
+      " Tasks only</div>";
     html += "</div>";
     html += "</div>";
     html += renderQuickAdd("note");
-    html += '<div class="cl-task-list cl-note-content' + (flags.indent ? " cl-note-indented" : "") + '">';
+    html +=
+      '<div class="cl-task-list cl-note-content' +
+      (flags.indent ? " cl-note-indented" : "") +
+      '">';
     var skipUntilIndent = -1;
     var sectionStack = [];
     var firstH1Skipped = false;
@@ -1395,16 +2000,29 @@
         var tabMatch = p.rawContent.match(/^\t+/);
         if (tabMatch) pIndent = tabMatch[0].length;
       }
-      var isTask = p.type === "open" || p.type === "done" || p.type === "cancelled";
-      var isChecklist = p.type === "checklist" || p.type === "checklistDone" || p.type === "checklistCancelled";
+      var isTask =
+        p.type === "open" || p.type === "done" || p.type === "cancelled";
+      var isChecklist =
+        p.type === "checklist" ||
+        p.type === "checklistDone" ||
+        p.type === "checklistCancelled";
       var isHeading = p.type === "title";
       if (skipUntilIndent >= 0) {
         if (pIndent > skipUntilIndent) continue;
         skipUntilIndent = -1;
       }
       if (State.tasksOnly && !isTask && !isChecklist && !isHeading) continue;
-      if (State.filters.noteStatus && State.filters.noteStatus !== "all" && (isTask || isChecklist)) {
-        var taskStatus = p.type === "done" || p.type === "checklistDone" ? "done" : p.type === "open" || p.type === "checklist" ? "open" : "cancelled";
+      if (
+        State.filters.noteStatus &&
+        State.filters.noteStatus !== "all" &&
+        (isTask || isChecklist)
+      ) {
+        var taskStatus =
+          p.type === "done" || p.type === "checklistDone"
+            ? "done"
+            : p.type === "open" || p.type === "checklist"
+              ? "open"
+              : "cancelled";
         if (State.filters.noteStatus !== taskStatus) continue;
       }
       if (!isTask && !isChecklist && !isHeading) {
@@ -1426,9 +2044,14 @@
             continue;
           }
           var cbLangAttr = cbLang ? ' data-lang="' + esc(cbLang) + '"' : "";
-          var cbLangLabel = cbLang ? '<span class="cl-code-lang">' + esc(cbLang) + "</span>" : '<span class="cl-code-lang">code</span>';
+          var cbLangLabel = cbLang
+            ? '<span class="cl-code-lang">' + esc(cbLang) + "</span>"
+            : '<span class="cl-code-lang">code</span>';
           html += '<pre class="cl-code-block"' + cbLangAttr + ">";
-          html += '<div class="cl-code-header">' + cbLangLabel + '<button type="button" class="cl-code-copy" data-action="copyCodeBlock" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="cl-code-copy-label">Copy</span></button></div>';
+          html +=
+            '<div class="cl-code-header">' +
+            cbLangLabel +
+            '<button type="button" class="cl-code-copy" data-action="copyCodeBlock" title="Copy"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span class="cl-code-copy-label">Copy</span></button></div>';
           html += "<code>" + esc(cbLines.join("\n")) + "</code></pre>";
           pi = cbEnd;
           continue;
@@ -1440,7 +2063,11 @@
           var tableLines = [];
           var endIdx = pi;
           for (var tli = pi; tli < paras.length; tli++) {
-            var tRaw = (paras[tli].rawContent || paras[tli].content || "").trim();
+            var tRaw = (
+              paras[tli].rawContent ||
+              paras[tli].content ||
+              ""
+            ).trim();
             if (tRaw.charAt(0) !== "|") break;
             tableLines.push(tRaw);
             endIdx = tli;
@@ -1458,48 +2085,127 @@
       }
       if (isHeading) {
         var hLevel = p.headingLevel || 1;
-        while (sectionStack.length > 0 && sectionStack[sectionStack.length - 1].level >= hLevel) {
+        while (
+          sectionStack.length > 0 &&
+          sectionStack[sectionStack.length - 1].level >= hLevel
+        ) {
           html += "</div>";
           sectionStack.pop();
         }
         var hRawContent = p.content || "";
         var hCollapsed = /…\s*$/.test(hRawContent);
         var hFocused = flags.focus && /👀/.test(hRawContent);
-        var hDisplay = hRawContent.replace(/\s*…\s*$/, "").replace(/\s*👀\s*$/, "");
-        var hClass = State.tasksOnly ? "cl-section-heading" : "cl-note-heading cl-note-h" + hLevel;
+        var hDisplay = hRawContent
+          .replace(/\s*…\s*$/, "")
+          .replace(/\s*👀\s*$/, "");
+        var hClass = State.tasksOnly
+          ? "cl-section-heading"
+          : "cl-note-heading cl-note-h" + hLevel;
         var chevronDir = hCollapsed ? "right" : "down";
         var focusedAttr = hFocused ? ' data-focused="true"' : "";
-        html += '<div class="' + hClass + '" data-line-index="' + p.lineIndex + '"' + focusedAttr + ">";
+        html +=
+          '<div class="' +
+          hClass +
+          '" data-line-index="' +
+          p.lineIndex +
+          '"' +
+          focusedAttr +
+          ">";
         if (flags.progress && headingStats) {
           var st = headingStats.get(p.lineIndex);
           if (st) html += buildHeadingProgressSVG(st.done, st.total);
         }
-        html += '<span class="cl-heading-text">' + renderInlineMarkdown(hDisplay) + "</span>";
+        html +=
+          '<span class="cl-heading-text">' +
+          renderInlineMarkdown(hDisplay) +
+          "</span>";
         if (flags.focus) {
-          html += '<span class="cl-heading-focus" data-action="toggleHeadingFocus" data-line-index="' + p.lineIndex + '" title="Focus on this section"><i class="' + (hFocused ? "fa-solid" : "fa-regular") + ' fa-eye"></i></span>';
+          html +=
+            '<span class="cl-heading-focus" data-action="toggleHeadingFocus" data-line-index="' +
+            p.lineIndex +
+            '" title="Focus on this section"><i class="' +
+            (hFocused ? "fa-solid" : "fa-regular") +
+            ' fa-eye"></i></span>';
         }
-        html += '<span class="cl-heading-toggle' + (hCollapsed ? " cl-always-visible" : "") + '" data-action="toggleHeadingCollapse" data-line-index="' + p.lineIndex + '" title="Toggle collapse">';
-        html += '<svg width="10" height="10" viewBox="0 0 10 10" class="cl-heading-chevron cl-chevron-' + chevronDir + '"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        html +=
+          '<span class="cl-heading-toggle' +
+          (hCollapsed ? " cl-always-visible" : "") +
+          '" data-action="toggleHeadingCollapse" data-line-index="' +
+          p.lineIndex +
+          '" title="Toggle collapse">';
+        html +=
+          '<svg width="10" height="10" viewBox="0 0 10 10" class="cl-heading-chevron cl-chevron-' +
+          chevronDir +
+          '"><polyline points="2,3 5,7 8,3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
         html += "</span>";
         html += "</div>";
-        html += '<div class="cl-section-body"' + (hCollapsed ? ' style="display:none"' : "") + ' data-heading-line="' + p.lineIndex + '">';
+        html +=
+          '<div class="cl-section-body"' +
+          (hCollapsed ? ' style="display:none"' : "") +
+          ' data-heading-line="' +
+          p.lineIndex +
+          '">';
         sectionStack.push({ level: hLevel, collapsed: hCollapsed });
       } else if (isTask || isChecklist) {
         var parsed = parseTaskContentClient(p.content);
-        var status = p.type === "done" || p.type === "checklistDone" ? "done" : p.type === "cancelled" || p.type === "checklistCancelled" ? "cancelled" : "open";
+        var status =
+          p.type === "done" || p.type === "checklistDone"
+            ? "done"
+            : p.type === "cancelled" || p.type === "checklistCancelled"
+              ? "cancelled"
+              : "open";
         var raw = (p.rawContent || "").trimStart();
         var children = [];
         for (var chi = pi + 1; chi < paras.length; chi++) {
           if ((paras[chi].indentLevel || 0) <= pIndent) break;
           var cp = paras[chi];
           var cpType = cp.type;
-          if (cpType === "open" || cpType === "done" || cpType === "cancelled") {
+          if (
+            cpType === "open" ||
+            cpType === "done" ||
+            cpType === "cancelled"
+          ) {
             var cpParsed = parseTaskContentClient(cp.content || "");
-            children.push({ type: "task", content: cpParsed.cleanContent, rawContent: cp.content, status: cpType === "done" ? "done" : cpType === "cancelled" ? "cancelled" : "open", lineIndex: cp.lineIndex, id: nc.filename + ":" + cp.lineIndex, priority: cpParsed.priority, scheduledDate: cpParsed.scheduledDate, scheduledWeek: cpParsed.scheduledWeek, tags: cpParsed.tags, mentions: cpParsed.mentions });
-          } else if (cpType === "checklist" || cpType === "checklistDone" || cpType === "checklistCancelled") {
-            children.push({ type: "checklist", content: cp.content || "", status: cpType === "checklistDone" ? "done" : cpType === "checklistCancelled" ? "cancelled" : "open", lineIndex: cp.lineIndex });
+            children.push({
+              type: "task",
+              content: cpParsed.cleanContent,
+              rawContent: cp.content,
+              status:
+                cpType === "done"
+                  ? "done"
+                  : cpType === "cancelled"
+                    ? "cancelled"
+                    : "open",
+              lineIndex: cp.lineIndex,
+              id: nc.filename + ":" + cp.lineIndex,
+              priority: cpParsed.priority,
+              scheduledDate: cpParsed.scheduledDate,
+              scheduledWeek: cpParsed.scheduledWeek,
+              tags: cpParsed.tags,
+              mentions: cpParsed.mentions
+            });
+          } else if (
+            cpType === "checklist" ||
+            cpType === "checklistDone" ||
+            cpType === "checklistCancelled"
+          ) {
+            children.push({
+              type: "checklist",
+              content: cp.content || "",
+              status:
+                cpType === "checklistDone"
+                  ? "done"
+                  : cpType === "checklistCancelled"
+                    ? "cancelled"
+                    : "open",
+              lineIndex: cp.lineIndex
+            });
           } else {
-            children.push({ type: "note", content: cp.content || "", lineIndex: cp.lineIndex });
+            children.push({
+              type: "note",
+              content: cp.content || "",
+              lineIndex: cp.lineIndex
+            });
           }
         }
         if (children.length > 0) skipUntilIndent = pIndent;
@@ -1523,15 +2229,34 @@
           lineIndex: p.lineIndex,
           children
         };
-        var taskFuture = status === "open" && taskObj.scheduledDate && taskObj.scheduledDate > State.today;
+        var taskFuture =
+          status === "open" &&
+          taskObj.scheduledDate &&
+          taskObj.scheduledDate > State.today;
         if (State.filters.hideFuture && taskFuture) {
           if (children && children.length) skipUntilIndent = pIndent;
           continue;
         }
         var indent = pIndent * 20;
-        if (indent > 0) html += '<div class="cl-indent-wrap" style="padding-left:' + indent + 'px;">';
-        var taskOverdue = status === "open" && taskObj.scheduledDate && taskObj.scheduledDate < State.today;
-        html += renderTaskRow(taskObj, { showSource: false, lineIndex: p.lineIndex, indentLevel: pIndent, childCount: children.length, showStar: true, isOverdue: taskOverdue, alwaysShowDate: true, future: taskFuture });
+        if (indent > 0)
+          html +=
+            '<div class="cl-indent-wrap" style="padding-left:' +
+            indent +
+            'px;">';
+        var taskOverdue =
+          status === "open" &&
+          taskObj.scheduledDate &&
+          taskObj.scheduledDate < State.today;
+        html += renderTaskRow(taskObj, {
+          showSource: false,
+          lineIndex: p.lineIndex,
+          indentLevel: pIndent,
+          childCount: children.length,
+          showStar: true,
+          isOverdue: taskOverdue,
+          alwaysShowDate: true,
+          future: taskFuture
+        });
         if (indent > 0) html += "</div>";
       } else {
         var indent = pIndent * 20;
@@ -1550,14 +2275,39 @@
           }
         }
         if (isList) {
-          html += '<div class="cl-note-list-item" style="padding-left:' + indent + 'px;"><span class="cl-bullet">\u2022</span><span>' + renderInlineMarkdown(p.content) + "</span></div>";
+          html +=
+            '<div class="cl-note-list-item" style="padding-left:' +
+            indent +
+            'px;"><span class="cl-bullet">\u2022</span><span>' +
+            renderInlineMarkdown(p.content) +
+            "</span></div>";
         } else if (isNumbered) {
-          html += '<div class="cl-note-list-item" style="padding-left:' + indent + 'px;"><span class="cl-num-marker">' + numLabel + "</span><span>" + renderInlineMarkdown(p.content) + "</span></div>";
-        } else if (p.type === "quote" || p.content && p.content.match(/^\s*>\s/)) {
+          html +=
+            '<div class="cl-note-list-item" style="padding-left:' +
+            indent +
+            'px;"><span class="cl-num-marker">' +
+            numLabel +
+            "</span><span>" +
+            renderInlineMarkdown(p.content) +
+            "</span></div>";
+        } else if (
+          p.type === "quote" ||
+          (p.content && p.content.match(/^\s*>\s/))
+        ) {
           var quoteText = (p.content || "").replace(/^\s*>\s?/, "");
-          html += '<div class="cl-note-quote" style="margin-left:' + indent + 'px;">' + renderInlineMarkdown(quoteText) + "</div>";
+          html +=
+            '<div class="cl-note-quote" style="margin-left:' +
+            indent +
+            'px;">' +
+            renderInlineMarkdown(quoteText) +
+            "</div>";
         } else {
-          html += '<div class="cl-note-para" style="padding-left:' + indent + 'px;">' + renderInlineMarkdown(p.content) + "</div>";
+          html +=
+            '<div class="cl-note-para" style="padding-left:' +
+            indent +
+            'px;">' +
+            renderInlineMarkdown(p.content) +
+            "</div>";
         }
       }
     }
@@ -1568,12 +2318,23 @@
     html += "</div>";
     if (isReviewDue(noteReviewDueDays, fm.status)) {
       var label = reviewDueLabel(noteReviewDueDays, !!fm.reviewed);
-      html += '<div class="cl-review-footer"><span class="cl-review-due-label">' + esc(label) + '</span><button class="cl-review-mark-btn" type="button" data-action="markReviewedFromFooter">Mark as Reviewed</button></div>';
+      html +=
+        '<div class="cl-review-footer"><span class="cl-review-due-label">' +
+        esc(label) +
+        '</span><button class="cl-review-mark-btn" type="button" data-action="markReviewedFromFooter">Mark as Reviewed</button></div>';
     }
     return html;
   }
   function parseTaskContentClient(content) {
-    var result = { priority: 0, scheduledDate: null, scheduledWeek: null, tags: [], mentions: [], repeat: null, cleanContent: "" };
+    var result = {
+      priority: 0,
+      scheduledDate: null,
+      scheduledWeek: null,
+      tags: [],
+      mentions: [],
+      repeat: null,
+      cleanContent: ""
+    };
     var c = content || "";
     var rm = c.match(/@repeat\(([^)]*)\)/);
     if (rm) result.repeat = rm[1];
@@ -1596,11 +2357,19 @@
     var menMatches = c.match(/@[\p{L}\p{N}_\-]+/gu);
     if (menMatches) {
       for (var i = 0; i < menMatches.length; i++) {
-        if (!menMatches[i].startsWith("@done") && !menMatches[i].startsWith("@due") && !menMatches[i].startsWith("@repeat")) result.mentions.push(menMatches[i]);
+        if (
+          !menMatches[i].startsWith("@done") &&
+          !menMatches[i].startsWith("@due") &&
+          !menMatches[i].startsWith("@repeat")
+        )
+          result.mentions.push(menMatches[i]);
       }
     }
     var clean = c;
-    clean = clean.replace(/\s*>(\d{4}-\d{2}-\d{2})(\s+\d{1,2}:\d{2}\s*(AM|PM)(\s*-\s*\d{1,2}:\d{2}\s*(AM|PM))?)?/gi, "");
+    clean = clean.replace(
+      /\s*>(\d{4}-\d{2}-\d{2})(\s+\d{1,2}:\d{2}\s*(AM|PM)(\s*-\s*\d{1,2}:\d{2}\s*(AM|PM))?)?/gi,
+      ""
+    );
     clean = clean.replace(/\s*>\d{4}-W\d{2}/g, "");
     clean = clean.replace(/\s*@done\([^)]*\)/g, "");
     clean = clean.replace(/\s*@repeat\([^)]*\)/g, "");
@@ -1617,7 +2386,8 @@
     var spaceBelow = viewportHeight - rect.bottom - margin;
     var spaceAbove = rect.top - margin;
     if (pickerHeight > spaceBelow && spaceAbove > spaceBelow) {
-      picker.style.top = Math.max(margin, rect.top - pickerHeight - margin) + "px";
+      picker.style.top =
+        Math.max(margin, rect.top - pickerHeight - margin) + "px";
     } else {
       picker.style.top = rect.bottom + margin + "px";
     }
@@ -1636,24 +2406,39 @@
     var todayParts = today.split("-");
     var viewYear = parseInt(todayParts[0], 10);
     var viewMonth = parseInt(todayParts[1], 10) - 1;
-    picker.innerHTML = '<div class="cl-picker-tabs"><div class="cl-picker-tab cl-picker-tab-active" data-tab="day">Day</div><div class="cl-picker-tab" data-tab="week">Week</div></div><div class="cl-picker-body" id="cl-date-body">' + renderDateDayTab(today, tmr, nextMon, inAWeek, viewYear, viewMonth) + '</div><div class="cl-picker-footer"><div class="cl-picker-action" data-action="removeDate"><span>\u2715</span> Remove date <span class="cl-shortcut">\u2318O</span></div></div>';
+    picker.innerHTML =
+      '<div class="cl-picker-tabs"><div class="cl-picker-tab cl-picker-tab-active" data-tab="day">Day</div><div class="cl-picker-tab" data-tab="week">Week</div></div><div class="cl-picker-body" id="cl-date-body">' +
+      renderDateDayTab(today, tmr, nextMon, inAWeek, viewYear, viewMonth) +
+      '</div><div class="cl-picker-footer"><div class="cl-picker-action" data-action="removeDate"><span>\u2715</span> Remove date <span class="cl-shortcut">\u2318O</span></div></div>';
     document.body.appendChild(picker);
     positionPickerVertically(picker, anchor);
-    picker.addEventListener("click", function(e) {
+    picker.addEventListener("click", function (e) {
       var target = e.target.closest("[data-action]");
       if (!target) {
         var tab = e.target.closest("[data-tab]");
         if (tab) {
           var tabs = picker.querySelectorAll(".cl-picker-tab");
-          for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove("cl-picker-tab-active");
+          for (var i = 0; i < tabs.length; i++)
+            tabs[i].classList.remove("cl-picker-tab-active");
           tab.classList.add("cl-picker-tab-active");
           var body = picker.querySelector("#cl-date-body");
-          if (tab.dataset.tab === "day") body.innerHTML = renderDateDayTab(today, tmr, nextMon, inAWeek, viewYear, viewMonth);
+          if (tab.dataset.tab === "day")
+            body.innerHTML = renderDateDayTab(
+              today,
+              tmr,
+              nextMon,
+              inAWeek,
+              viewYear,
+              viewMonth
+            );
           else body.innerHTML = renderDateWeekTab();
         }
         return;
       }
-      if (target.dataset.action === "calPrev" || target.dataset.action === "calNext") {
+      if (
+        target.dataset.action === "calPrev" ||
+        target.dataset.action === "calNext"
+      ) {
         if (target.dataset.action === "calPrev") {
           viewMonth--;
           if (viewMonth < 0) {
@@ -1668,13 +2453,21 @@
           }
         }
         var dayBody = picker.querySelector("#cl-date-body");
-        if (dayBody) dayBody.innerHTML = renderDateDayTab(today, tmr, nextMon, inAWeek, viewYear, viewMonth);
+        if (dayBody)
+          dayBody.innerHTML = renderDateDayTab(
+            today,
+            tmr,
+            nextMon,
+            inAWeek,
+            viewYear,
+            viewMonth
+          );
         return;
       }
       if (target.dataset.action === "selectDate") {
         State.editDraft.scheduledDate = target.dataset.date;
         State.editDraft.scheduledWeek = null;
-        State.editDraft.tags = State.editDraft.tags.filter(function(t) {
+        State.editDraft.tags = State.editDraft.tags.filter(function (t) {
           return t !== "#someday";
         });
         updateDateChip();
@@ -1682,7 +2475,7 @@
       } else if (target.dataset.action === "selectWeek") {
         State.editDraft.scheduledWeek = target.dataset.week;
         State.editDraft.scheduledDate = null;
-        State.editDraft.tags = State.editDraft.tags.filter(function(t) {
+        State.editDraft.tags = State.editDraft.tags.filter(function (t) {
           return t !== "#someday";
         });
         updateDateChip();
@@ -1697,10 +2490,30 @@
   }
   function renderDateDayTab(today, tmr, nextMon, inAWeek, viewYear, viewMonth) {
     var html = '<div class="cl-picker-options">';
-    html += '<div class="cl-picker-option cl-picker-today" data-action="selectDate" data-date="' + today + '"><span>\u2B50</span><span class="cl-picker-opt-label">Today</span><span class="cl-picker-opt-date">' + formatShortDate(today) + "</span></div>";
-    html += '<div class="cl-picker-option" data-action="selectDate" data-date="' + tmr + '"><span>\u2192</span><span class="cl-picker-opt-label">Tomorrow</span><span class="cl-picker-opt-date">' + formatShortDate(tmr) + "</span></div>";
-    html += '<div class="cl-picker-option" data-action="selectDate" data-date="' + nextMon + '"><span>\u{1F4C5}</span><span class="cl-picker-opt-label">Next Monday</span><span class="cl-picker-opt-date">' + formatShortDate(nextMon) + "</span></div>";
-    html += '<div class="cl-picker-option" data-action="selectDate" data-date="' + inAWeek + '"><span>+7</span><span class="cl-picker-opt-label">In a week</span><span class="cl-picker-opt-date">' + formatShortDate(inAWeek) + "</span></div>";
+    html +=
+      '<div class="cl-picker-option cl-picker-today" data-action="selectDate" data-date="' +
+      today +
+      '"><span>\u2B50</span><span class="cl-picker-opt-label">Today</span><span class="cl-picker-opt-date">' +
+      formatShortDate(today) +
+      "</span></div>";
+    html +=
+      '<div class="cl-picker-option" data-action="selectDate" data-date="' +
+      tmr +
+      '"><span>\u2192</span><span class="cl-picker-opt-label">Tomorrow</span><span class="cl-picker-opt-date">' +
+      formatShortDate(tmr) +
+      "</span></div>";
+    html +=
+      '<div class="cl-picker-option" data-action="selectDate" data-date="' +
+      nextMon +
+      '"><span>\u{1F4C5}</span><span class="cl-picker-opt-label">Next Monday</span><span class="cl-picker-opt-date">' +
+      formatShortDate(nextMon) +
+      "</span></div>";
+    html +=
+      '<div class="cl-picker-option" data-action="selectDate" data-date="' +
+      inAWeek +
+      '"><span>+7</span><span class="cl-picker-opt-label">In a week</span><span class="cl-picker-opt-date">' +
+      formatShortDate(inAWeek) +
+      "</span></div>";
     html += "</div>";
     html += '<div class="cl-picker-divider"></div>';
     html += renderMiniCalendar(today, viewYear, viewMonth);
@@ -1712,23 +2525,56 @@
       viewYear = parseInt(parts[0], 10);
       viewMonth = parseInt(parts[1], 10) - 1;
     }
-    var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+    var months = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
     var firstDay = new Date(viewYear, viewMonth, 1);
     var startOffset = (firstDay.getDay() + 6) % 7;
     var daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     var html = '<div class="cl-mini-cal">';
-    html += '<div class="cl-cal-nav"><span class="cl-cal-arrow" data-action="calPrev" title="Previous month">\u25C0</span><span class="cl-cal-month">' + months[viewMonth] + " " + viewYear + '</span><span class="cl-cal-arrow" data-action="calNext" title="Next month">\u25B6</span></div>';
+    html +=
+      '<div class="cl-cal-nav"><span class="cl-cal-arrow" data-action="calPrev" title="Previous month">\u25C0</span><span class="cl-cal-month">' +
+      months[viewMonth] +
+      " " +
+      viewYear +
+      '</span><span class="cl-cal-arrow" data-action="calNext" title="Next month">\u25B6</span></div>';
     html += '<div class="cl-cal-grid">';
     var dayNames = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
-    for (var di = 0; di < 7; di++) html += '<span class="cl-cal-day-name">' + dayNames[di] + "</span>";
-    for (var gap = 0; gap < startOffset; gap++) html += '<span class="cl-cal-day cl-cal-empty"></span>';
+    for (var di = 0; di < 7; di++)
+      html += '<span class="cl-cal-day-name">' + dayNames[di] + "</span>";
+    for (var gap = 0; gap < startOffset; gap++)
+      html += '<span class="cl-cal-day cl-cal-empty"></span>';
     for (var d = 1; d <= daysInMonth; d++) {
-      var dateStr = viewYear + "-" + String(viewMonth + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+      var dateStr =
+        viewYear +
+        "-" +
+        String(viewMonth + 1).padStart(2, "0") +
+        "-" +
+        String(d).padStart(2, "0");
       var cls = "cl-cal-day";
       if (dateStr === todayStr) cls += " cl-cal-today";
       if (dateStr < todayStr) cls += " cl-cal-past";
-      if (State.editDraft && State.editDraft.scheduledDate === dateStr) cls += " cl-cal-selected";
-      html += '<span class="' + cls + '" data-action="selectDate" data-date="' + dateStr + '">' + d + "</span>";
+      if (State.editDraft && State.editDraft.scheduledDate === dateStr)
+        cls += " cl-cal-selected";
+      html +=
+        '<span class="' +
+        cls +
+        '" data-action="selectDate" data-date="' +
+        dateStr +
+        '">' +
+        d +
+        "</span>";
     }
     html += "</div></div>";
     return html;
@@ -1739,7 +2585,14 @@
     for (var w = 0; w < 8; w++) {
       var weekStr = addWeeks(currentWeek, w);
       var label = w === 0 ? "This week" : w === 1 ? "Next week" : weekStr;
-      html += '<div class="cl-picker-option" data-action="selectWeek" data-week="' + weekStr + '"><span class="cl-picker-opt-label">' + label + '</span><span class="cl-picker-opt-date">' + weekStr + "</span></div>";
+      html +=
+        '<div class="cl-picker-option" data-action="selectWeek" data-week="' +
+        weekStr +
+        '"><span class="cl-picker-opt-label">' +
+        label +
+        '</span><span class="cl-picker-opt-date">' +
+        weekStr +
+        "</span></div>";
     }
     html += "</div>";
     return html;
@@ -1750,8 +2603,10 @@
     var chip = editor.querySelector('[data-action="openDatePicker"]');
     if (!chip) return;
     var label = "Schedule...";
-    if (State.editDraft.scheduledDate) label = formatShortDate(State.editDraft.scheduledDate);
-    else if (State.editDraft.scheduledWeek) label = State.editDraft.scheduledWeek;
+    if (State.editDraft.scheduledDate)
+      label = formatShortDate(State.editDraft.scheduledDate);
+    else if (State.editDraft.scheduledWeek)
+      label = State.editDraft.scheduledWeek;
     chip.innerHTML = '<span class="cl-meta-icon">\u{1F4C5}</span>' + label;
   }
   function showNotePicker(anchor) {
@@ -1761,14 +2616,19 @@
     picker.className = "cl-picker cl-note-picker";
     picker.style.top = rect.bottom + 4 + "px";
     picker.style.left = Math.min(rect.left, window.innerWidth - 310) + "px";
-    picker.innerHTML = '<div class="cl-picker-search"><input class="cl-picker-input" placeholder="Search notes..." autofocus/></div><div class="cl-picker-results" id="cl-note-results">' + renderNoteResults("") + '</div><div class="cl-picker-footer"><span style="opacity:0.35;font-size:11px;">\u21B5 select \xB7 Esc close</span></div>';
+    picker.innerHTML =
+      '<div class="cl-picker-search"><input class="cl-picker-input" placeholder="Search notes..." autofocus/></div><div class="cl-picker-results" id="cl-note-results">' +
+      renderNoteResults("") +
+      '</div><div class="cl-picker-footer"><span style="opacity:0.35;font-size:11px;">\u21B5 select \xB7 Esc close</span></div>';
     document.body.appendChild(picker);
     positionPickerVertically(picker, anchor);
     var input = picker.querySelector(".cl-picker-input");
-    input.addEventListener("input", function() {
-      document.getElementById("cl-note-results").innerHTML = renderNoteResults(input.value);
+    input.addEventListener("input", function () {
+      document.getElementById("cl-note-results").innerHTML = renderNoteResults(
+        input.value
+      );
     });
-    picker.addEventListener("click", function(e) {
+    picker.addEventListener("click", function (e) {
       var target = e.target.closest('[data-action="selectNote"]');
       if (target) {
         State.editDraft.moveToFilename = target.dataset.filename;
@@ -1795,11 +2655,20 @@
       }
       if (curTask && curTask.noteFilename) {
         html += '<div class="cl-picker-group">Current Location</div>';
-        html += '<div class="cl-picker-result cl-picker-current" data-action="selectNote" data-filename="' + esc(curTask.noteFilename) + '" data-title="' + esc(curTask.noteTitle) + '">';
+        html +=
+          '<div class="cl-picker-result cl-picker-current" data-action="selectNote" data-filename="' +
+          esc(curTask.noteFilename) +
+          '" data-title="' +
+          esc(curTask.noteTitle) +
+          '">';
         html += '<span class="cl-picker-note-icon">\u{1F4CD}</span>';
-        html += '<span class="cl-picker-note-title">' + esc(curTask.noteTitle) + "</span>";
+        html +=
+          '<span class="cl-picker-note-title">' +
+          esc(curTask.noteTitle) +
+          "</span>";
         html += "</div>";
-        html += '<div class="cl-picker-divider" style="margin:4px 14px;"></div>';
+        html +=
+          '<div class="cl-picker-divider" style="margin:4px 14px;"></div>';
       }
     }
     for (var fi = 0; fi < State.folders.length; fi++) {
@@ -1813,10 +2682,17 @@
       html += '<div class="cl-picker-group">' + esc(folder.name) + "</div>";
       for (var mi = 0; mi < matchingNotes.length; mi++) {
         var mn = matchingNotes[mi];
-        html += '<div class="cl-picker-result" data-action="selectNote" data-filename="' + esc(mn.filename) + '" data-title="' + esc(mn.title) + '">';
+        html +=
+          '<div class="cl-picker-result" data-action="selectNote" data-filename="' +
+          esc(mn.filename) +
+          '" data-title="' +
+          esc(mn.title) +
+          '">';
         html += '<span class="cl-picker-note-icon">\u{1F4C4}</span>';
-        html += '<span class="cl-picker-note-title">' + esc(mn.title) + "</span>";
-        html += '<span class="cl-picker-note-count">' + mn.taskCount + "</span>";
+        html +=
+          '<span class="cl-picker-note-title">' + esc(mn.title) + "</span>";
+        html +=
+          '<span class="cl-picker-note-count">' + mn.taskCount + "</span>";
         html += "</div>";
       }
     }
@@ -1838,7 +2714,8 @@
     for (var i = 0; i < State.tasks.length; i++) {
       var t = State.tasks[i];
       if (t.mentions) {
-        for (var j = 0; j < t.mentions.length; j++) menMap[t.mentions[j]] = true;
+        for (var j = 0; j < t.mentions.length; j++)
+          menMap[t.mentions[j]] = true;
       }
     }
     return Object.keys(menMap).sort();
@@ -1846,10 +2723,11 @@
   function showInlineInput(anchor, prefix, onCommit) {
     var existing = document.querySelector(".cl-inline-input-wrap");
     if (existing) existing.remove();
-    var allSuggestions = prefix === "#" ? getAllKnownTags() : getAllKnownMentions();
+    var allSuggestions =
+      prefix === "#" ? getAllKnownTags() : getAllKnownMentions();
     var draft = State.editDraft;
     var already = prefix === "#" ? draft.tags || [] : draft.mentions || [];
-    allSuggestions = allSuggestions.filter(function(s) {
+    allSuggestions = allSuggestions.filter(function (s) {
       return already.indexOf(s) === -1;
     });
     var wrap = document.createElement("div");
@@ -1868,10 +2746,13 @@
     input.setSelectionRange(prefix.length, prefix.length);
     function updateSuggestions() {
       var q = input.value.toLowerCase();
-      var matches = allSuggestions.filter(function(s) {
+      var matches = allSuggestions.filter(function (s) {
         return s.toLowerCase().indexOf(q) >= 0;
       });
-      if (matches.length === 0 || matches.length === 1 && matches[0].toLowerCase() === q) {
+      if (
+        matches.length === 0 ||
+        (matches.length === 1 && matches[0].toLowerCase() === q)
+      ) {
         dropdown.innerHTML = "";
         dropdown.style.display = "none";
         selectedIdx = -1;
@@ -1885,7 +2766,7 @@
         item.className = "cl-autocomplete-item";
         item.textContent = matches[i];
         item.dataset.value = matches[i];
-        item.addEventListener("mousedown", function(e) {
+        item.addEventListener("mousedown", function (e) {
           e.preventDefault();
           input.value = this.dataset.value;
           commit();
@@ -1902,17 +2783,25 @@
     }
     input.addEventListener("input", updateSuggestions);
     updateSuggestions();
-    input.addEventListener("keydown", function(e) {
+    input.addEventListener("keydown", function (e) {
       var items = dropdown.querySelectorAll(".cl-autocomplete-item");
       if (e.key === "ArrowDown" && items.length > 0) {
         e.preventDefault();
         selectedIdx = Math.min(selectedIdx + 1, items.length - 1);
-        for (var i = 0; i < items.length; i++) items[i].classList.toggle("cl-autocomplete-active", i === selectedIdx);
+        for (var i = 0; i < items.length; i++)
+          items[i].classList.toggle(
+            "cl-autocomplete-active",
+            i === selectedIdx
+          );
         input.value = items[selectedIdx].dataset.value;
       } else if (e.key === "ArrowUp" && items.length > 0) {
         e.preventDefault();
         selectedIdx = Math.max(selectedIdx - 1, 0);
-        for (var i = 0; i < items.length; i++) items[i].classList.toggle("cl-autocomplete-active", i === selectedIdx);
+        for (var i = 0; i < items.length; i++)
+          items[i].classList.toggle(
+            "cl-autocomplete-active",
+            i === selectedIdx
+          );
         input.value = items[selectedIdx].dataset.value;
       } else if (e.key === "Enter") {
         e.preventDefault();
@@ -1923,8 +2812,8 @@
         wrap.remove();
       }
     });
-    input.addEventListener("blur", function() {
-      setTimeout(function() {
+    input.addEventListener("blur", function () {
+      setTimeout(function () {
         if (wrap.parentNode) commit();
       }, 150);
     });
@@ -1933,7 +2822,6 @@
     var pickers = document.querySelectorAll(".cl-picker");
     for (var i = 0; i < pickers.length; i++) pickers[i].remove();
   }
-
   // src/webview/ui/task-editor.js
   function expandTask(taskId) {
     if (!taskId) return;
@@ -1956,7 +2844,10 @@
     var trailingMatch = titleContent.match(/(\s+#[\p{L}\p{N}_\-\/]+)+$/u);
     if (trailingMatch) {
       var trailingStr = trailingMatch[0];
-      titleContent = titleContent.substring(0, titleContent.length - trailingStr.length);
+      titleContent = titleContent.substring(
+        0,
+        titleContent.length - trailingStr.length
+      );
       var tagMatches = trailingStr.match(/#[\p{L}\p{N}_\-\/]+/gu);
       if (tagMatches) trailingTags = tagMatches;
     }
@@ -1975,12 +2866,24 @@
     };
     for (var ci = 0; ci < task.children.length; ci++) {
       var child = task.children[ci];
-      if (child.type === "note") State.editDraft.notes.push({ content: child.content, rawContent: child.rawContent || child.content, lineIndex: child.lineIndex });
-      else if (child.type === "checklist") State.editDraft.checklists.push({ content: child.content, status: child.status, lineIndex: child.lineIndex });
+      if (child.type === "note")
+        State.editDraft.notes.push({
+          content: child.content,
+          rawContent: child.rawContent || child.content,
+          lineIndex: child.lineIndex
+        });
+      else if (child.type === "checklist")
+        State.editDraft.checklists.push({
+          content: child.content,
+          status: child.status,
+          lineIndex: child.lineIndex
+        });
     }
     State.editDraft.activeField = null;
     State.editDraft.editingChecklistIndex = null;
-    var row = document.querySelector('.cl-task-row[data-task-id="' + CSS.escape(taskId) + '"]');
+    var row = document.querySelector(
+      '.cl-task-row[data-task-id="' + CSS.escape(taskId) + '"]'
+    );
     if (!row) return;
     row.style.display = "none";
     var editor = document.createElement("div");
@@ -1988,7 +2891,7 @@
     editor.id = "cl-editor";
     editor.innerHTML = renderTaskEditorHTML(task);
     row.parentNode.insertBefore(editor, row.nextSibling);
-    var subTasks = task.children.filter(function(c) {
+    var subTasks = task.children.filter(function (c) {
       return c.type === "task";
     });
     for (var si = subTasks.length - 1; si >= 0; si--) {
@@ -1998,10 +2901,13 @@
       editor.parentNode.insertBefore(subRow, editor.nextSibling);
     }
     attachEditorListeners(editor);
-    setTimeout(function() {
-      var subRows = editor.parentNode ? editor.parentNode.querySelectorAll(".cl-subtask-row") : [];
+    setTimeout(function () {
+      var subRows = editor.parentNode
+        ? editor.parentNode.querySelectorAll(".cl-subtask-row")
+        : [];
       var last = subRows.length ? subRows[subRows.length - 1] : editor;
-      var scroller = editor.closest(".cl-note-content") || editor.closest(".cl-task-list");
+      var scroller =
+        editor.closest(".cl-note-content") || editor.closest(".cl-task-list");
       if (!scroller) return;
       var margin = 24;
       var scrollerRect = scroller.getBoundingClientRect();
@@ -2010,9 +2916,15 @@
       var overshoot = bottomRect.bottom - (scrollerRect.bottom - margin);
       var undershoot = scrollerRect.top + margin - topRect.top;
       if (overshoot > 0) {
-        scroller.scrollTo({ top: scroller.scrollTop + overshoot, behavior: "smooth" });
+        scroller.scrollTo({
+          top: scroller.scrollTop + overshoot,
+          behavior: "smooth"
+        });
       } else if (undershoot > 0) {
-        scroller.scrollTo({ top: scroller.scrollTop - undershoot, behavior: "smooth" });
+        scroller.scrollTo({
+          top: scroller.scrollTop - undershoot,
+          behavior: "smooth"
+        });
       }
     }, 0);
   }
@@ -2021,7 +2933,9 @@
     var editor = document.getElementById("cl-editor");
     if (editor) {
       var taskId = State.expandedTaskId;
-      var row = document.querySelector('.cl-task-row[data-task-id="' + CSS.escape(taskId) + '"]');
+      var row = document.querySelector(
+        '.cl-task-row[data-task-id="' + CSS.escape(taskId) + '"]'
+      );
       if (row) row.style.display = "";
       var subRows = document.querySelectorAll(".cl-subtask-row");
       for (var i = 0; i < subRows.length; i++) subRows[i].remove();
@@ -2034,26 +2948,43 @@
     var draft = State.editDraft;
     var html = "";
     html += '<div class="cl-editor-row">';
-    var editorCbClass = task.type === "checklist" ? "cl-cb cl-cb-square" : "cl-cb";
+    var editorCbClass =
+      task.type === "checklist" ? "cl-cb cl-cb-square" : "cl-cb";
     if (task.status === "done") editorCbClass += " cl-cb-done";
     else if (task.status === "cancelled") editorCbClass += " cl-cb-cancelled";
-    html += '<div class="' + editorCbClass + '" data-action="toggleTask"></div>';
+    html +=
+      '<div class="' + editorCbClass + '" data-action="toggleTask"></div>';
     if (draft.activeField === "title") {
-      html += '<input class="cl-editor-title cl-editor-field-active" value="' + esc(draft.content) + '" data-field="title"/>';
+      html +=
+        '<input class="cl-editor-title cl-editor-field-active" value="' +
+        esc(draft.content) +
+        '" data-field="title"/>';
     } else {
-      html += '<div class="cl-editor-title-view" data-field-view="title">' + renderInlineMarkdown(draft.content) + "</div>";
+      html +=
+        '<div class="cl-editor-title-view" data-field-view="title">' +
+        renderInlineMarkdown(draft.content) +
+        "</div>";
     }
     html += "</div>";
-    var notesForEdit = draft.notes.map(function(n) {
-      return n.content || "";
-    }).join("\n");
+    var notesForEdit = draft.notes
+      .map(function (n) {
+        return n.content || "";
+      })
+      .join("\n");
     html += '<div class="cl-editor-section">';
     if (draft.activeField === "notes") {
-      html += '<textarea class="cl-editor-notes cl-editor-field-active" data-field="notes">' + esc(notesForEdit) + "</textarea>";
+      html +=
+        '<textarea class="cl-editor-notes cl-editor-field-active" data-field="notes">' +
+        esc(notesForEdit) +
+        "</textarea>";
     } else if (notesForEdit.trim()) {
-      html += '<div class="cl-editor-notes-view" data-field-view="notes">' + renderNotesMarkdown(draft.notes) + "</div>";
+      html +=
+        '<div class="cl-editor-notes-view" data-field-view="notes">' +
+        renderNotesMarkdown(draft.notes) +
+        "</div>";
     } else {
-      html += '<div class="cl-editor-notes-view cl-editor-notes-empty" data-field-view="notes">Notes...</div>';
+      html +=
+        '<div class="cl-editor-notes-view cl-editor-notes-empty" data-field-view="notes">Notes...</div>';
     }
     html += "</div>";
     if (draft.checklists.length > 0) {
@@ -2062,12 +2993,30 @@
       for (var ci = 0; ci < draft.checklists.length; ci++) {
         var cl = draft.checklists[ci];
         var clDone = cl.status === "done" ? " cl-cl-done" : "";
-        html += '<div class="cl-checklist-item' + clDone + '" data-index="' + ci + '">';
+        html +=
+          '<div class="cl-checklist-item' +
+          clDone +
+          '" data-index="' +
+          ci +
+          '">';
         html += '<div class="cl-cl-check" data-action="toggleChecklist"></div>';
-        if (draft.activeField === "checklist" && draft.editingChecklistIndex === ci) {
-          html += '<input class="cl-cl-text cl-cl-text-input cl-editor-field-active" data-field="checklist" data-index="' + ci + '" value="' + esc(cl.content) + '"/>';
+        if (
+          draft.activeField === "checklist" &&
+          draft.editingChecklistIndex === ci
+        ) {
+          html +=
+            '<input class="cl-cl-text cl-cl-text-input cl-editor-field-active" data-field="checklist" data-index="' +
+            ci +
+            '" value="' +
+            esc(cl.content) +
+            '"/>';
         } else {
-          html += '<span class="cl-cl-text" data-field-view="checklist" data-index="' + ci + '">' + renderInlineMarkdown(cl.content) + "</span>";
+          html +=
+            '<span class="cl-cl-text" data-field-view="checklist" data-index="' +
+            ci +
+            '">' +
+            renderInlineMarkdown(cl.content) +
+            "</span>";
         }
         html += "</div>";
       }
@@ -2077,25 +3026,53 @@
     var dateLabel = "Schedule...";
     if (draft.scheduledDate) dateLabel = formatShortDate(draft.scheduledDate);
     else if (draft.scheduledWeek) dateLabel = draft.scheduledWeek;
-    html += '<div class="cl-meta-chip" data-action="openDatePicker"><span class="cl-meta-icon">\u{1F4C5}</span>' + dateLabel + "</div>";
+    html +=
+      '<div class="cl-meta-chip" data-action="openDatePicker"><span class="cl-meta-icon">\u{1F4C5}</span>' +
+      dateLabel +
+      "</div>";
     if (task.noteFilename) {
-      var noteLabel = draft.moveToFilename ? esc(draft.moveToLabel || "Moved") : esc(task.noteTitle);
-      html += '<div class="cl-meta-chip" data-action="jumpToProjectNote" data-filename="' + esc(task.noteFilename) + '"><span class="cl-meta-icon">\u{1F4C1}</span>' + noteLabel + "</div>";
+      var noteLabel = draft.moveToFilename
+        ? esc(draft.moveToLabel || "Moved")
+        : esc(task.noteTitle);
+      html +=
+        '<div class="cl-meta-chip" data-action="jumpToProjectNote" data-filename="' +
+        esc(task.noteFilename) +
+        '"><span class="cl-meta-icon">\u{1F4C1}</span>' +
+        noteLabel +
+        "</div>";
     }
-    html += '<div class="cl-meta-chip cl-meta-add" data-action="openNotePicker">\u2192 Move to...</div>';
+    html +=
+      '<div class="cl-meta-chip cl-meta-add" data-action="openNotePicker">\u2192 Move to...</div>';
     for (var ti = 0; ti < draft.tags.length; ti++) {
-      html += '<div class="cl-meta-chip cl-meta-tag" data-action="removeTag" data-tag="' + esc(draft.tags[ti]) + '">' + esc(draft.tags[ti]) + ' <span class="cl-remove">\xD7</span></div>';
+      html +=
+        '<div class="cl-meta-chip cl-meta-tag" data-action="removeTag" data-tag="' +
+        esc(draft.tags[ti]) +
+        '">' +
+        esc(draft.tags[ti]) +
+        ' <span class="cl-remove">\xD7</span></div>';
     }
-    html += '<div class="cl-meta-chip cl-meta-add" data-action="addTag">+ tag</div>';
+    html +=
+      '<div class="cl-meta-chip cl-meta-add" data-action="addTag">+ tag</div>';
     for (var mi = 0; mi < draft.mentions.length; mi++) {
-      html += '<div class="cl-meta-chip cl-meta-mention">' + esc(draft.mentions[mi]) + "</div>";
+      html +=
+        '<div class="cl-meta-chip cl-meta-mention">' +
+        esc(draft.mentions[mi]) +
+        "</div>";
     }
-    html += '<div class="cl-meta-chip cl-meta-add" data-action="addMention">+ @mention</div>';
+    html +=
+      '<div class="cl-meta-chip cl-meta-add" data-action="addMention">+ @mention</div>';
     var priLabels = ["\u2014", "!", "!!", "!!!"];
-    html += '<div class="cl-meta-chip cl-meta-pri cl-pri-' + draft.priority + '" data-action="cyclePri">' + priLabels[draft.priority] + "</div>";
+    html +=
+      '<div class="cl-meta-chip cl-meta-pri cl-pri-' +
+      draft.priority +
+      '" data-action="cyclePri">' +
+      priLabels[draft.priority] +
+      "</div>";
     html += "</div>";
-    html += '<div class="cl-editor-hints">\u2318Enter save \xB7 Esc cancel \xB7 \u2318T today \xB7 \u2318O remove date</div>';
-    html += '<div class="cl-editor-actions"><button class="cl-editor-btn cl-editor-btn-cancel" data-action="editorCancel">Cancel</button><button class="cl-editor-btn cl-editor-btn-save" data-action="editorSave">Save</button></div>';
+    html +=
+      '<div class="cl-editor-hints">\u2318Enter save \xB7 Esc cancel \xB7 \u2318T today \xB7 \u2318O remove date</div>';
+    html +=
+      '<div class="cl-editor-actions"><button class="cl-editor-btn cl-editor-btn-cancel" data-action="editorCancel">Cancel</button><button class="cl-editor-btn cl-editor-btn-save" data-action="editorSave">Save</button></div>';
     return html;
   }
   function renderNotesMarkdown(notes) {
@@ -2104,11 +3081,20 @@
       var raw = notes[i].rawContent || notes[i].content || "";
       raw = raw.replace(/^\t+/, "");
       if (raw.match(/^>\s?/)) {
-        html += '<div class="cl-editor-note-line cl-note-quote" style="margin:2px 0;">' + renderInlineMarkdown(raw.replace(/^>\s?/, "")) + "</div>";
+        html +=
+          '<div class="cl-editor-note-line cl-note-quote" style="margin:2px 0;">' +
+          renderInlineMarkdown(raw.replace(/^>\s?/, "")) +
+          "</div>";
       } else if (raw.match(/^[-*]\s+/)) {
-        html += '<div class="cl-editor-note-line">\u2022 ' + renderInlineMarkdown(raw.replace(/^[-*]\s+/, "")) + "</div>";
+        html +=
+          '<div class="cl-editor-note-line">\u2022 ' +
+          renderInlineMarkdown(raw.replace(/^[-*]\s+/, "")) +
+          "</div>";
       } else {
-        html += '<div class="cl-editor-note-line">' + renderInlineMarkdown(raw) + "</div>";
+        html +=
+          '<div class="cl-editor-note-line">' +
+          renderInlineMarkdown(raw) +
+          "</div>";
       }
     }
     return html;
@@ -2117,7 +3103,8 @@
     if (!State.editDraft) return;
     saveActiveFieldValue();
     State.editDraft.activeField = fieldName;
-    State.editDraft.editingChecklistIndex = fieldName === "checklist" ? checklistIndex : null;
+    State.editDraft.editingChecklistIndex =
+      fieldName === "checklist" ? checklistIndex : null;
     var task = null;
     for (var i = 0; i < State.tasks.length; i++) {
       if (State.tasks[i].id === State.expandedTaskId) {
@@ -2160,21 +3147,26 @@
       var notesEl = editor.querySelector(".cl-editor-notes");
       if (notesEl) {
         var lines = notesEl.value.split("\n");
-        State.editDraft.notes = lines.map(function(l, i) {
+        State.editDraft.notes = lines.map(function (l, i) {
           var orig = State.editDraft.notes[i];
-          return { content: l, rawContent: orig ? orig.rawContent : "	" + l, lineIndex: orig ? orig.lineIndex : -1 };
+          return {
+            content: l,
+            rawContent: orig ? orig.rawContent : "	" + l,
+            lineIndex: orig ? orig.lineIndex : -1
+          };
         });
       }
     } else if (State.editDraft.activeField === "checklist") {
       var clEl = editor.querySelector(".cl-cl-text-input");
       if (clEl) {
         var idx = parseInt(clEl.dataset.index);
-        if (State.editDraft.checklists[idx]) State.editDraft.checklists[idx].content = clEl.value;
+        if (State.editDraft.checklists[idx])
+          State.editDraft.checklists[idx].content = clEl.value;
       }
     }
   }
   function attachEditorListeners(editor) {
-    editor.addEventListener("click", function(e) {
+    editor.addEventListener("click", function (e) {
       if (e.target.closest("a.cl-link")) return;
       var viewField = e.target.closest("[data-field-view]");
       if (viewField) {
@@ -2204,7 +3196,10 @@
             var idParts = State.expandedTaskId.split(":");
             var fname = idParts.slice(0, -1).join(":");
             var lineIdx = parseInt(idParts[idParts.length - 1]);
-            sendToPlugin("toggleTask", JSON.stringify({ filename: fname, lineIndex: lineIdx }));
+            sendToPlugin(
+              "toggleTask",
+              JSON.stringify({ filename: fname, lineIndex: lineIdx })
+            );
           }
           break;
         case "toggleChecklist":
@@ -2213,7 +3208,10 @@
             var idx = parseInt(item.dataset.index);
             if (State.editDraft.checklists[idx]) {
               saveActiveFieldValue();
-              State.editDraft.checklists[idx].status = State.editDraft.checklists[idx].status === "done" ? "open" : "done";
+              State.editDraft.checklists[idx].status =
+                State.editDraft.checklists[idx].status === "done"
+                  ? "open"
+                  : "done";
               item.classList.toggle("cl-cl-done");
             }
           }
@@ -2222,24 +3220,25 @@
           State.editDraft.priority = (State.editDraft.priority + 1) % 4;
           var priLabels = ["\u2014", "!", "!!", "!!!"];
           target.textContent = priLabels[State.editDraft.priority];
-          target.className = "cl-meta-chip cl-meta-pri cl-pri-" + State.editDraft.priority;
+          target.className =
+            "cl-meta-chip cl-meta-pri cl-pri-" + State.editDraft.priority;
           break;
         case "removeTag":
           var tag = target.dataset.tag;
-          State.editDraft.tags = State.editDraft.tags.filter(function(t) {
+          State.editDraft.tags = State.editDraft.tags.filter(function (t) {
             return t !== tag;
           });
           target.remove();
           break;
         case "addTag":
-          showInlineInput(target, "#", function(val) {
+          showInlineInput(target, "#", function (val) {
             if (!val.startsWith("#")) val = "#" + val;
             State.editDraft.tags.push(val);
             reRenderEditorMeta();
           });
           break;
         case "addMention":
-          showInlineInput(target, "@", function(val) {
+          showInlineInput(target, "@", function (val) {
             if (!val.startsWith("@")) val = "@" + val;
             State.editDraft.mentions.push(val);
             reRenderEditorMeta();
@@ -2259,7 +3258,7 @@
           break;
       }
     });
-    editor.addEventListener("keydown", function(e) {
+    editor.addEventListener("keydown", function (e) {
       if (e.key === "Tab") {
         e.preventDefault();
         e.stopPropagation();
@@ -2338,7 +3337,20 @@
     var destructive = !!opts.destructive;
     var overlay = document.createElement("div");
     overlay.className = "cl-confirm-overlay";
-    overlay.innerHTML = '<div class="cl-confirm-modal"><div class="cl-confirm-title">' + esc(title) + "</div>" + (message ? '<div class="cl-confirm-message">' + esc(message) + "</div>" : "") + '<div class="cl-confirm-actions"><button class="cl-confirm-cancel" type="button">' + esc(cancelLabel) + '</button><button class="cl-confirm-ok' + (destructive ? " cl-confirm-destructive" : "") + '" type="button">' + esc(confirmLabel) + "</button></div></div>";
+    overlay.innerHTML =
+      '<div class="cl-confirm-modal"><div class="cl-confirm-title">' +
+      esc(title) +
+      "</div>" +
+      (message
+        ? '<div class="cl-confirm-message">' + esc(message) + "</div>"
+        : "") +
+      '<div class="cl-confirm-actions"><button class="cl-confirm-cancel" type="button">' +
+      esc(cancelLabel) +
+      '</button><button class="cl-confirm-ok' +
+      (destructive ? " cl-confirm-destructive" : "") +
+      '" type="button">' +
+      esc(confirmLabel) +
+      "</button></div></div>";
     document.body.appendChild(overlay);
     var okBtn = overlay.querySelector(".cl-confirm-ok");
     var cancelBtn = overlay.querySelector(".cl-confirm-cancel");
@@ -2355,10 +3367,10 @@
     }
     okBtn.addEventListener("click", confirm);
     cancelBtn.addEventListener("click", cancel);
-    overlay.addEventListener("click", function(e) {
+    overlay.addEventListener("click", function (e) {
       if (e.target === overlay) cancel();
     });
-    overlay.addEventListener("keydown", function(e) {
+    overlay.addEventListener("keydown", function (e) {
       if (e.key === "Enter") {
         e.preventDefault();
         e.stopPropagation();
@@ -2369,7 +3381,7 @@
         cancel();
       }
     });
-    setTimeout(function() {
+    setTimeout(function () {
       okBtn.focus();
     }, 0);
   }
@@ -2389,12 +3401,16 @@
     var preview = task ? task.content : "";
     openConfirmModal({
       title: "Delete this task?",
-      message: preview ? "\u201C" + preview + "\u201D will be removed from its note. This cannot be undone from Clarity." : "The task will be removed from its note. This cannot be undone from Clarity.",
+      message: preview
+        ? "\u201C" +
+          preview +
+          "\u201D will be removed from its note. This cannot be undone from Clarity."
+        : "The task will be removed from its note. This cannot be undone from Clarity.",
       confirmLabel: "Delete",
       cancelLabel: "Cancel",
       destructive: true,
-      onConfirm: function() {
-        State.tasks = State.tasks.filter(function(t) {
+      onConfirm: function () {
+        State.tasks = State.tasks.filter(function (t) {
           return t.id !== taskId;
         });
         if (State.expandedTaskId === taskId) collapseTask();
@@ -2408,10 +3424,16 @@
     {
       title: "Navigation",
       items: [
-        { keys: ["\u23181", "..", "\u23185"], label: "Switch view (Inbox, Today, Upcoming, Anytime, Someday)" },
+        {
+          keys: ["\u23181", "..", "\u23185"],
+          label: "Switch view (Inbox, Today, Upcoming, Anytime, Someday)"
+        },
         { keys: ["\u2318/"], label: "Quick-jump to a project or area" },
         { keys: ["\u2191", "\u2193"], label: "Move focus between tasks" },
-        { keys: ["\u2318\u2303\u2191", "\u2318\u2303\u2193"], label: "Move the focused task up / down" },
+        {
+          keys: ["\u2318\u2303\u2191", "\u2318\u2303\u2193"],
+          label: "Move the focused task up / down"
+        },
         { keys: ["Enter"], label: "Open the focused task" },
         { keys: ["Esc"], label: "Close editor, picker, or palette" }
       ]
@@ -2433,7 +3455,10 @@
       items: [
         { keys: ["\u2318N"], label: "Focus the New Task input" },
         { keys: ["\u2318\u2303N"], label: "New task below the focused task" },
-        { keys: ["\u2318\u21E7N"], label: "New heading below the focused task" },
+        {
+          keys: ["\u2318\u21E7N"],
+          label: "New heading below the focused task"
+        },
         { keys: ["\u2318\u2325N"], label: "New project note in this folder" },
         { keys: ["?"], label: "Show this cheatsheet" }
       ]
@@ -2445,30 +3470,40 @@
       existing.remove();
       return;
     }
-    var html = '<div class="cl-cheatsheet-modal"><div class="cl-cheatsheet-title">Keyboard shortcuts</div>';
+    var html =
+      '<div class="cl-cheatsheet-modal"><div class="cl-cheatsheet-title">Keyboard shortcuts</div>';
     for (var gi = 0; gi < SHORTCUTS_GROUPS.length; gi++) {
       var g = SHORTCUTS_GROUPS[gi];
       html += '<div class="cl-cheatsheet-section">';
-      html += '<div class="cl-cheatsheet-section-title">' + esc(g.title) + "</div>";
+      html +=
+        '<div class="cl-cheatsheet-section-title">' + esc(g.title) + "</div>";
       for (var ii = 0; ii < g.items.length; ii++) {
         var it = g.items[ii];
         var keysHtml = "";
         for (var ki = 0; ki < it.keys.length; ki++) {
           var k = it.keys[ki];
-          if (k === "..") keysHtml += '<span class="cl-cheatsheet-sep">\u2026</span>';
-          else keysHtml += '<kbd class="cl-cheatsheet-kbd">' + esc(k) + "</kbd>";
+          if (k === "..")
+            keysHtml += '<span class="cl-cheatsheet-sep">\u2026</span>';
+          else
+            keysHtml += '<kbd class="cl-cheatsheet-kbd">' + esc(k) + "</kbd>";
         }
-        html += '<div class="cl-cheatsheet-row"><div class="cl-cheatsheet-keys">' + keysHtml + '</div><div class="cl-cheatsheet-label">' + esc(it.label) + "</div></div>";
+        html +=
+          '<div class="cl-cheatsheet-row"><div class="cl-cheatsheet-keys">' +
+          keysHtml +
+          '</div><div class="cl-cheatsheet-label">' +
+          esc(it.label) +
+          "</div></div>";
       }
       html += "</div>";
     }
-    html += '<div class="cl-cheatsheet-foot">Press <kbd class="cl-cheatsheet-kbd">?</kbd> or <kbd class="cl-cheatsheet-kbd">Esc</kbd> to close</div>';
+    html +=
+      '<div class="cl-cheatsheet-foot">Press <kbd class="cl-cheatsheet-kbd">?</kbd> or <kbd class="cl-cheatsheet-kbd">Esc</kbd> to close</div>';
     html += "</div>";
     var overlay = document.createElement("div");
     overlay.className = "cl-cheatsheet-overlay";
     overlay.innerHTML = html;
     document.body.appendChild(overlay);
-    overlay.addEventListener("click", function(e) {
+    overlay.addEventListener("click", function (e) {
       if (e.target === overlay) overlay.remove();
     });
   }
@@ -2477,7 +3512,11 @@
     var existing = document.querySelector(".cl-project-menu");
     if (existing) existing.remove();
     if (_projectMenuOutsideListener) {
-      document.removeEventListener("mousedown", _projectMenuOutsideListener, true);
+      document.removeEventListener(
+        "mousedown",
+        _projectMenuOutsideListener,
+        true
+      );
       _projectMenuOutsideListener = null;
     }
   }
@@ -2488,10 +3527,18 @@
     }
     var wrap = button.closest(".cl-project-menu-wrap");
     if (!wrap) return;
-    var fn = State.currentNoteFilename || State.noteContent && State.noteContent.filename || "";
+    var fn =
+      State.currentNoteFilename ||
+      (State.noteContent && State.noteContent.filename) ||
+      "";
     var menu = document.createElement("div");
     menu.className = "cl-project-menu";
-    menu.innerHTML = '<button type="button" class="cl-project-menu-item" data-action="refreshProject" data-filename="' + esc(fn) + '"><span class="cl-project-menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.5-7.1"/><path d="M21 4v5h-5"/></svg></span><span>Refresh</span></button><button type="button" class="cl-project-menu-item" data-action="openNoteMetaModal"><span class="cl-project-menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></span><span>Edit metadata\u2026</span></button><button type="button" class="cl-project-menu-item" data-action="moveCompletedToBottom" data-filename="' + esc(fn) + '"><span class="cl-project-menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="M6 14l6 6 6-6"/><path d="M5 22h14"/></svg></span><span>Move completed to bottom</span></button><div class="cl-project-menu-sep"></div><button type="button" class="cl-project-menu-item cl-project-menu-destructive" data-action="archiveProject"><span class="cl-project-menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8H3v13h18V8z"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></span><span>Move to archive\u2026</span></button>';
+    menu.innerHTML =
+      '<button type="button" class="cl-project-menu-item" data-action="refreshProject" data-filename="' +
+      esc(fn) +
+      '"><span class="cl-project-menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.5-7.1"/><path d="M21 4v5h-5"/></svg></span><span>Refresh</span></button><button type="button" class="cl-project-menu-item" data-action="openNoteMetaModal"><span class="cl-project-menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg></span><span>Edit metadata\u2026</span></button><button type="button" class="cl-project-menu-item" data-action="moveCompletedToBottom" data-filename="' +
+      esc(fn) +
+      '"><span class="cl-project-menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12"/><path d="M6 14l6 6 6-6"/><path d="M5 22h14"/></svg></span><span>Move completed to bottom</span></button><div class="cl-project-menu-sep"></div><button type="button" class="cl-project-menu-item cl-project-menu-destructive" data-action="archiveProject"><span class="cl-project-menu-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8H3v13h18V8z"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg></span><span>Move to archive\u2026</span></button>';
     menu.style.visibility = "hidden";
     (document.getElementById("cl-main") || document.body).appendChild(menu);
     var btnRect = button.getBoundingClientRect();
@@ -2509,29 +3556,35 @@
     menu.style.left = left + "px";
     menu.style.top = top + "px";
     menu.style.visibility = "";
-    _projectMenuOutsideListener = function(e) {
-      if (!menu.contains(e.target) && !button.contains(e.target)) closeProjectMenu();
+    _projectMenuOutsideListener = function (e) {
+      if (!menu.contains(e.target) && !button.contains(e.target))
+        closeProjectMenu();
     };
-    setTimeout(function() {
+    setTimeout(function () {
       document.addEventListener("mousedown", _projectMenuOutsideListener, true);
     }, 0);
   }
   function confirmArchiveProject() {
     var nc = State.noteContent;
-    var fn = nc && nc.filename || State.currentNoteFilename;
+    var fn = (nc && nc.filename) || State.currentNoteFilename;
     if (!fn) return;
     var origFolder = fn.replace(/\/[^/]+$/, "");
     if (origFolder === fn) origFolder = "";
     var leaf = fn.split("/").pop();
-    var targetPath = "@Archive/" + State.today + (origFolder ? "/" + origFolder : "") + "/" + leaf;
-    var title = nc && nc.title || leaf.replace(/\.(md|txt)$/, "");
+    var targetPath =
+      "@Archive/" +
+      State.today +
+      (origFolder ? "/" + origFolder : "") +
+      "/" +
+      leaf;
+    var title = (nc && nc.title) || leaf.replace(/\.(md|txt)$/, "");
     openConfirmModal({
       title: "Move to archive?",
       message: "\u201C" + title + "\u201D will be moved to: " + targetPath,
       confirmLabel: "Archive",
       cancelLabel: "Cancel",
       destructive: true,
-      onConfirm: function() {
+      onConfirm: function () {
         sendToPlugin("archiveProject", JSON.stringify({ filename: fn }));
       }
     });
@@ -2546,16 +3599,70 @@
     }
     var fm = nc.frontmatter || {};
     var typeVal = fm.type === "project" || fm.type === "area" ? fm.type : "";
-    var statusVal = fm.status === "working" || fm.status === "paused" || fm.status === "someday" || fm.status === "completed" || fm.status === "canceled" ? fm.status : "";
+    var statusVal =
+      fm.status === "working" ||
+      fm.status === "paused" ||
+      fm.status === "someday" ||
+      fm.status === "completed" ||
+      fm.status === "canceled"
+        ? fm.status
+        : "";
     var dueVal = fm.due || "";
     var reviewedVal = fm.reviewed || "";
     var reviewVal = fm.review || "";
     var clarityFlags = parseClarityFlags(fm);
     var overlay = document.createElement("div");
     overlay.className = "cl-meta-overlay";
-    overlay.innerHTML = '<div class="cl-meta-modal"><div class="cl-meta-modal-title">Project metadata</div><div class="cl-meta-row"><label class="cl-meta-label">Type</label><select class="cl-meta-input" data-field="type"><option value=""' + (typeVal === "" ? " selected" : "") + '>\u2014</option><option value="project"' + (typeVal === "project" ? " selected" : "") + '>Project</option><option value="area"' + (typeVal === "area" ? " selected" : "") + '>Area</option></select></div><div class="cl-meta-row"><label class="cl-meta-label">Status</label><select class="cl-meta-input" data-field="status"><option value=""' + (statusVal === "" ? " selected" : "") + '>Active</option><option value="working"' + (statusVal === "working" ? " selected" : "") + '>Working</option><option value="paused"' + (statusVal === "paused" ? " selected" : "") + '>Paused</option><option value="someday"' + (statusVal === "someday" ? " selected" : "") + ">Someday</option>" + (typeVal === "project" ? '<option value="completed"' + (statusVal === "completed" ? " selected" : "") + '>Completed</option><option value="canceled"' + (statusVal === "canceled" ? " selected" : "") + ">Canceled</option>" : "") + '</select></div><div class="cl-meta-row"><label class="cl-meta-label">Deadline</label><div class="cl-meta-inline" data-field="due-row">' + (dueVal ? '<input class="cl-meta-input" type="date" data-field="due" value="' + esc(dueVal) + '"><button class="cl-meta-link" type="button" data-action="metaClearDue">Clear</button>' : '<span class="cl-meta-readonly" data-field="due-display">\u2014</span><button class="cl-meta-link" type="button" data-action="metaSetDue">Set deadline</button>') + '</div></div><div class="cl-meta-row"><label class="cl-meta-label">Last Review</label><div class="cl-meta-inline"><span class="cl-meta-readonly" data-field="reviewed-display">' + esc(reviewedVal || "\u2014") + '</span><button class="cl-meta-link" type="button" data-action="metaMarkReviewed">Mark as reviewed</button></div></div><div class="cl-meta-row"><label class="cl-meta-label">Review Schedule</label><input class="cl-meta-input" type="text" data-field="review" placeholder="e.g. 1w, 2w, 1m" value="' + esc(reviewVal) + '"></div><div class="cl-meta-row"><label class="cl-meta-label">Clarity view</label><div class="cl-meta-chips" data-field="clarity-chips"><button type="button" class="cl-meta-chip' + (clarityFlags.toc ? " cl-meta-chip-active" : "") + '" data-flag="toc">TOC</button><button type="button" class="cl-meta-chip' + (clarityFlags.indent ? " cl-meta-chip-active" : "") + '" data-flag="indent">Indent</button><button type="button" class="cl-meta-chip' + (clarityFlags.focus ? " cl-meta-chip-active" : "") + '" data-flag="focus">Focus</button><button type="button" class="cl-meta-chip' + (clarityFlags.progress ? " cl-meta-chip-active" : "") + '" data-flag="progress">Progress</button></div></div><div class="cl-meta-actions"><button class="cl-meta-cancel" type="button">Cancel</button><button class="cl-meta-save" type="button">Save</button></div></div>';
+    overlay.innerHTML =
+      '<div class="cl-meta-modal"><div class="cl-meta-modal-title">Project metadata</div><div class="cl-meta-row"><label class="cl-meta-label">Type</label><select class="cl-meta-input" data-field="type"><option value=""' +
+      (typeVal === "" ? " selected" : "") +
+      '>\u2014</option><option value="project"' +
+      (typeVal === "project" ? " selected" : "") +
+      '>Project</option><option value="area"' +
+      (typeVal === "area" ? " selected" : "") +
+      '>Area</option></select></div><div class="cl-meta-row"><label class="cl-meta-label">Status</label><select class="cl-meta-input" data-field="status"><option value=""' +
+      (statusVal === "" ? " selected" : "") +
+      '>Active</option><option value="working"' +
+      (statusVal === "working" ? " selected" : "") +
+      '>Working</option><option value="paused"' +
+      (statusVal === "paused" ? " selected" : "") +
+      '>Paused</option><option value="someday"' +
+      (statusVal === "someday" ? " selected" : "") +
+      ">Someday</option>" +
+      (typeVal === "project"
+        ? '<option value="completed"' +
+          (statusVal === "completed" ? " selected" : "") +
+          '>Completed</option><option value="canceled"' +
+          (statusVal === "canceled" ? " selected" : "") +
+          ">Canceled</option>"
+        : "") +
+      '</select></div><div class="cl-meta-row"><label class="cl-meta-label">Deadline</label><div class="cl-meta-inline" data-field="due-row">' +
+      (dueVal
+        ? '<input class="cl-meta-input" type="date" data-field="due" value="' +
+          esc(dueVal) +
+          '"><button class="cl-meta-link" type="button" data-action="metaClearDue">Clear</button>'
+        : '<span class="cl-meta-readonly" data-field="due-display">\u2014</span><button class="cl-meta-link" type="button" data-action="metaSetDue">Set deadline</button>') +
+      '</div></div><div class="cl-meta-row"><label class="cl-meta-label">Last Review</label><div class="cl-meta-inline"><span class="cl-meta-readonly" data-field="reviewed-display">' +
+      esc(reviewedVal || "\u2014") +
+      '</span><button class="cl-meta-link" type="button" data-action="metaMarkReviewed">Mark as reviewed</button></div></div><div class="cl-meta-row"><label class="cl-meta-label">Review Schedule</label><input class="cl-meta-input" type="text" data-field="review" placeholder="e.g. 1w, 2w, 1m" value="' +
+      esc(reviewVal) +
+      '"></div><div class="cl-meta-row"><label class="cl-meta-label">Clarity view</label><div class="cl-meta-chips" data-field="clarity-chips"><button type="button" class="cl-meta-chip' +
+      (clarityFlags.toc ? " cl-meta-chip-active" : "") +
+      '" data-flag="toc">TOC</button><button type="button" class="cl-meta-chip' +
+      (clarityFlags.indent ? " cl-meta-chip-active" : "") +
+      '" data-flag="indent">Indent</button><button type="button" class="cl-meta-chip' +
+      (clarityFlags.focus ? " cl-meta-chip-active" : "") +
+      '" data-flag="focus">Focus</button><button type="button" class="cl-meta-chip' +
+      (clarityFlags.progress ? " cl-meta-chip-active" : "") +
+      '" data-flag="progress">Progress</button></div></div><div class="cl-meta-actions"><button class="cl-meta-cancel" type="button">Cancel</button><button class="cl-meta-save" type="button">Save</button></div></div>';
     document.body.appendChild(overlay);
-    var draft = { type: typeVal, status: statusVal, due: dueVal, reviewed: reviewedVal, review: reviewVal };
+    var draft = {
+      type: typeVal,
+      status: statusVal,
+      due: dueVal,
+      reviewed: reviewedVal,
+      review: reviewVal
+    };
     function close() {
       overlay.remove();
     }
@@ -2571,7 +3678,12 @@
     }
     function save() {
       readInputs();
-      var chipFlags = { toc: false, indent: false, focus: false, progress: false };
+      var chipFlags = {
+        toc: false,
+        indent: false,
+        focus: false,
+        progress: false
+      };
       var chips = overlay.querySelectorAll(".cl-meta-chip");
       for (var ci = 0; ci < chips.length; ci++) {
         if (chips[ci].classList.contains("cl-meta-chip-active")) {
@@ -2586,10 +3698,13 @@
         review: draft.review || null,
         clarity: serializeClarityFlags(chipFlags)
       };
-      sendToPlugin("updateNoteFrontmatter", JSON.stringify({ filename: nc.filename, updates }));
+      sendToPlugin(
+        "updateNoteFrontmatter",
+        JSON.stringify({ filename: nc.filename, updates })
+      );
       close();
     }
-    overlay.addEventListener("click", function(e) {
+    overlay.addEventListener("click", function (e) {
       if (e.target === overlay) close();
       var chip = e.target.closest(".cl-meta-chip");
       if (chip && overlay.contains(chip)) {
@@ -2603,12 +3718,16 @@
         draft.due = "";
         var dueRow = overlay.querySelector('[data-field="due-row"]');
         if (dueRow) {
-          dueRow.innerHTML = '<span class="cl-meta-readonly" data-field="due-display">\u2014</span><button class="cl-meta-link" type="button" data-action="metaSetDue">Set deadline</button>';
+          dueRow.innerHTML =
+            '<span class="cl-meta-readonly" data-field="due-display">\u2014</span><button class="cl-meta-link" type="button" data-action="metaSetDue">Set deadline</button>';
         }
       } else if (action === "metaSetDue") {
         var dueRow2 = overlay.querySelector('[data-field="due-row"]');
         if (dueRow2) {
-          dueRow2.innerHTML = '<input class="cl-meta-input" type="date" data-field="due" value="' + esc(State.today) + '"><button class="cl-meta-link" type="button" data-action="metaClearDue">Clear</button>';
+          dueRow2.innerHTML =
+            '<input class="cl-meta-input" type="date" data-field="due" value="' +
+            esc(State.today) +
+            '"><button class="cl-meta-link" type="button" data-action="metaClearDue">Clear</button>';
           draft.due = State.today;
           var newIn = dueRow2.querySelector('[data-field="due"]');
           if (newIn) newIn.focus();
@@ -2621,7 +3740,7 @@
     });
     overlay.querySelector(".cl-meta-cancel").addEventListener("click", close);
     overlay.querySelector(".cl-meta-save").addEventListener("click", save);
-    overlay.addEventListener("keydown", function(e) {
+    overlay.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         e.preventDefault();
         e.stopPropagation();
@@ -2632,7 +3751,7 @@
         save();
       }
     });
-    setTimeout(function() {
+    setTimeout(function () {
       var first = overlay.querySelector('[data-field="type"]');
       if (first) first.focus();
     }, 0);
@@ -2655,7 +3774,8 @@
       if (State.visibleViews[v.id] === false) continue;
       var count = getViewCount(v.id);
       var active = State.currentView === v.id ? " cl-nav-active" : "";
-      html += '<div class="cl-nav-item' + active + '" data-view="' + v.id + '">';
+      html +=
+        '<div class="cl-nav-item' + active + '" data-view="' + v.id + '">';
       html += '<span class="cl-nav-icon">' + getViewIcon(v.id, 18) + "</span>";
       html += '<span class="cl-nav-label">' + v.label + "</span>";
       if (count > 0 && (v.id === "inbox" || v.id === "today")) {
@@ -2670,35 +3790,56 @@
       var collapsed = State.collapsedAreas && State.collapsedAreas[areaKey];
       var notes = folder.notes || [];
       var visibleNotes = notes;
-      visibleNotes = visibleNotes.filter(function(n2) {
+      visibleNotes = visibleNotes.filter(function (n2) {
         return n2.status !== "someday";
       });
       if (State.hidePaused) {
-        visibleNotes = visibleNotes.filter(function(n2) {
+        visibleNotes = visibleNotes.filter(function (n2) {
           return n2.status !== "paused";
         });
       }
       if (State.hideEmptyProjects) {
-        visibleNotes = visibleNotes.filter(function(n2) {
+        visibleNotes = visibleNotes.filter(function (n2) {
           return (n2.openCount || 0) > 0;
         });
       }
       if (State.hideNonProjects) {
-        visibleNotes = visibleNotes.filter(function(n2) {
+        visibleNotes = visibleNotes.filter(function (n2) {
           return n2.hasProjectOrAreaType;
         });
       }
       if (visibleNotes.length === 0) continue;
       html += '<div class="cl-area-header" data-area="' + esc(areaKey) + '">';
-      html += '<span class="cl-area-chevron' + (collapsed ? " cl-collapsed" : "") + '">\u25B8</span>';
+      html +=
+        '<span class="cl-area-chevron' +
+        (collapsed ? " cl-collapsed" : "") +
+        '">\u25B8</span>';
       html += esc(folder.name);
       html += "</div>";
-      html += '<div class="cl-area-group' + (collapsed ? " cl-hidden" : "") + '" data-area-group="' + esc(areaKey) + '">';
+      html +=
+        '<div class="cl-area-group' +
+        (collapsed ? " cl-hidden" : "") +
+        '" data-area-group="' +
+        esc(areaKey) +
+        '">';
       for (var ni = 0; ni < visibleNotes.length; ni++) {
         var n = visibleNotes[ni];
-        var noteActive = State.currentView === "note" && State.currentNoteFilename === n.filename ? " cl-nav-active" : "";
-        var mutedCls = n.status === "paused" || n.status === "someday" ? " cl-project-muted" : "";
-        html += '<div class="cl-nav-item cl-project-item' + mutedCls + noteActive + '" data-view="note" data-filename="' + esc(n.filename) + '">';
+        var noteActive =
+          State.currentView === "note" &&
+          State.currentNoteFilename === n.filename
+            ? " cl-nav-active"
+            : "";
+        var mutedCls =
+          n.status === "paused" || n.status === "someday"
+            ? " cl-project-muted"
+            : "";
+        html +=
+          '<div class="cl-nav-item cl-project-item' +
+          mutedCls +
+          noteActive +
+          '" data-view="note" data-filename="' +
+          esc(n.filename) +
+          '">';
         html += renderProjectIcon(n, 18);
         html += '<span class="cl-project-title">' + esc(n.title) + "</span>";
         if (n.due) html += buildDeadlineBadgeCompact(n.due);
@@ -2715,7 +3856,7 @@
     }
     var areaHeaders = el.querySelectorAll(".cl-area-header");
     for (var ai = 0; ai < areaHeaders.length; ai++) {
-      areaHeaders[ai].addEventListener("click", function(e) {
+      areaHeaders[ai].addEventListener("click", function (e) {
         var areaKey2 = e.currentTarget.dataset.area;
         if (!areaKey2) return;
         State.collapsedAreas[areaKey2] = !State.collapsedAreas[areaKey2];
@@ -2723,7 +3864,12 @@
         var group = el.querySelector('[data-area-group="' + areaKey2 + '"]');
         if (chevron) chevron.classList.toggle("cl-collapsed");
         if (group) group.classList.toggle("cl-hidden");
-        sendToPlugin("saveCollapsedAreas", JSON.stringify({ collapsedAreas: JSON.stringify(State.collapsedAreas) }));
+        sendToPlugin(
+          "saveCollapsedAreas",
+          JSON.stringify({
+            collapsedAreas: JSON.stringify(State.collapsedAreas)
+          })
+        );
       });
     }
     attachSidebarFooterHandlers();
@@ -2731,28 +3877,55 @@
   function renderSidebarFooter() {
     var open = State.settingsPopoverOpen;
     var html = '<div class="cl-sidebar-footer">';
-    html += '<div class="cl-settings-popover' + (open ? " cl-popover-open" : "") + '">';
+    html +=
+      '<div class="cl-settings-popover' +
+      (open ? " cl-popover-open" : "") +
+      '">';
     html += '<div class="cl-settings-section">';
     html += '<div class="cl-settings-section-title">Projects &amp; Areas</div>';
-    html += '<label class="cl-settings-toggle"><input type="checkbox" data-action="toggleHideEmpty"' + (State.hideEmptyProjects ? " checked" : "") + "><span>Hide notes without open tasks</span></label>";
-    html += '<label class="cl-settings-toggle"><input type="checkbox" data-action="toggleHideNonProjects"' + (State.hideNonProjects ? " checked" : "") + "><span>Hide non-projects and non-areas</span></label>";
-    html += '<label class="cl-settings-toggle"><input type="checkbox" data-action="toggleHidePaused"' + (State.hidePaused ? " checked" : "") + "><span>Hide paused</span></label>";
-    html += '<button class="cl-settings-action" data-action="collapseAllAreas">Collapse all</button>';
-    html += '<button class="cl-settings-action" data-action="expandAllAreas">Expand all</button>';
+    html +=
+      '<label class="cl-settings-toggle"><input type="checkbox" data-action="toggleHideEmpty"' +
+      (State.hideEmptyProjects ? " checked" : "") +
+      "><span>Hide notes without open tasks</span></label>";
+    html +=
+      '<label class="cl-settings-toggle"><input type="checkbox" data-action="toggleHideNonProjects"' +
+      (State.hideNonProjects ? " checked" : "") +
+      "><span>Hide non-projects and non-areas</span></label>";
+    html +=
+      '<label class="cl-settings-toggle"><input type="checkbox" data-action="toggleHidePaused"' +
+      (State.hidePaused ? " checked" : "") +
+      "><span>Hide paused</span></label>";
+    html +=
+      '<button class="cl-settings-action" data-action="collapseAllAreas">Collapse all</button>';
+    html +=
+      '<button class="cl-settings-action" data-action="expandAllAreas">Expand all</button>';
     html += "</div>";
     html += '<div class="cl-settings-section">';
     html += '<div class="cl-settings-section-title">Views</div>';
     for (var vi = 0; vi < SIDEBAR_VIEWS.length; vi++) {
       var v = SIDEBAR_VIEWS[vi];
       var checked = State.visibleViews[v.id] !== false;
-      html += '<label class="cl-settings-toggle"><input type="checkbox" data-action="toggleViewVisibility" data-view="' + v.id + '"' + (checked ? " checked" : "") + '><span class="cl-settings-toggle-icon">' + getViewIcon(v.id, 16) + "</span><span>" + v.label + "</span></label>";
+      html +=
+        '<label class="cl-settings-toggle"><input type="checkbox" data-action="toggleViewVisibility" data-view="' +
+        v.id +
+        '"' +
+        (checked ? " checked" : "") +
+        '><span class="cl-settings-toggle-icon">' +
+        getViewIcon(v.id, 16) +
+        "</span><span>" +
+        v.label +
+        "</span></label>";
     }
     html += "</div>";
     html += '<div class="cl-settings-section">';
-    html += '<button class="cl-settings-action cl-settings-help" data-action="openShortcutsCheatsheet"><span>Keyboard shortcuts</span><kbd class="cl-cheatsheet-kbd">?</kbd></button>';
+    html +=
+      '<button class="cl-settings-action cl-settings-help" data-action="openShortcutsCheatsheet"><span>Keyboard shortcuts</span><kbd class="cl-cheatsheet-kbd">?</kbd></button>';
     html += "</div>";
     html += "</div>";
-    html += '<button class="cl-settings-btn' + (open ? " cl-active" : "") + '" data-action="toggleSettingsPopover" title="View settings">';
+    html +=
+      '<button class="cl-settings-btn' +
+      (open ? " cl-active" : "") +
+      '" data-action="toggleSettingsPopover" title="View settings">';
     html += '<i class="fa-solid fa-sliders"></i>';
     html += "<span>View settings</span>";
     html += "</button>";
@@ -2767,48 +3940,73 @@
       document.removeEventListener("click", _settingsOutsideListener);
       _settingsOutsideListener = null;
     }
-    footer.addEventListener("click", function(e) {
+    footer.addEventListener("click", function (e) {
       var target = e.target.closest("[data-action]");
       if (!target) return;
       var action = target.dataset.action;
       switch (action) {
         case "toggleSettingsPopover":
           State.settingsPopoverOpen = !State.settingsPopoverOpen;
-          document.body.classList.toggle("cl-settings-backdrop", State.settingsPopoverOpen);
+          document.body.classList.toggle(
+            "cl-settings-backdrop",
+            State.settingsPopoverOpen
+          );
           renderSidebar();
           break;
         case "toggleHideEmpty":
           State.hideEmptyProjects = !!target.checked;
-          sendToPlugin("saveHideEmptyProjects", JSON.stringify({ hideEmptyProjects: State.hideEmptyProjects }));
+          sendToPlugin(
+            "saveHideEmptyProjects",
+            JSON.stringify({ hideEmptyProjects: State.hideEmptyProjects })
+          );
           renderSidebar();
           break;
         case "toggleHidePaused":
           State.hidePaused = !!target.checked;
-          sendToPlugin("saveHidePaused", JSON.stringify({ hidePaused: State.hidePaused }));
+          sendToPlugin(
+            "saveHidePaused",
+            JSON.stringify({ hidePaused: State.hidePaused })
+          );
           renderSidebar();
           break;
         case "toggleHideNonProjects":
           State.hideNonProjects = !!target.checked;
-          sendToPlugin("saveHideNonProjects", JSON.stringify({ hideNonProjects: State.hideNonProjects }));
+          sendToPlugin(
+            "saveHideNonProjects",
+            JSON.stringify({ hideNonProjects: State.hideNonProjects })
+          );
           renderSidebar();
           break;
         case "collapseAllAreas":
           for (var fi = 0; fi < State.folders.length; fi++) {
             State.collapsedAreas[State.folders[fi].path] = true;
           }
-          sendToPlugin("saveCollapsedAreas", JSON.stringify({ collapsedAreas: JSON.stringify(State.collapsedAreas) }));
+          sendToPlugin(
+            "saveCollapsedAreas",
+            JSON.stringify({
+              collapsedAreas: JSON.stringify(State.collapsedAreas)
+            })
+          );
           renderSidebar();
           break;
         case "expandAllAreas":
           State.collapsedAreas = {};
-          sendToPlugin("saveCollapsedAreas", JSON.stringify({ collapsedAreas: JSON.stringify(State.collapsedAreas) }));
+          sendToPlugin(
+            "saveCollapsedAreas",
+            JSON.stringify({
+              collapsedAreas: JSON.stringify(State.collapsedAreas)
+            })
+          );
           renderSidebar();
           break;
         case "toggleViewVisibility": {
           var vid = target.dataset.view;
           if (!vid) break;
           State.visibleViews[vid] = !!target.checked;
-          sendToPlugin("saveVisibleViews", JSON.stringify({ visibleViews: JSON.stringify(State.visibleViews) }));
+          sendToPlugin(
+            "saveVisibleViews",
+            JSON.stringify({ visibleViews: JSON.stringify(State.visibleViews) })
+          );
           renderSidebar();
           break;
         }
@@ -2821,7 +4019,7 @@
       }
     });
     if (State.settingsPopoverOpen) {
-      _settingsOutsideListener = function(e) {
+      _settingsOutsideListener = function (e) {
         var f = document.querySelector(".cl-sidebar-footer");
         if (f && !f.contains(e.target)) {
           State.settingsPopoverOpen = false;
@@ -2831,8 +4029,9 @@
           renderSidebar();
         }
       };
-      setTimeout(function() {
-        if (_settingsOutsideListener) document.addEventListener("click", _settingsOutsideListener);
+      setTimeout(function () {
+        if (_settingsOutsideListener)
+          document.addEventListener("click", _settingsOutsideListener);
       }, 0);
     }
   }
@@ -2853,14 +4052,21 @@
     State.editDraft = null;
     if (view === "note") {
       State.currentNoteFilename = item.dataset.filename || null;
-      sendToPlugin("requestNoteContent", JSON.stringify({ filename: State.currentNoteFilename }));
+      sendToPlugin(
+        "requestNoteContent",
+        JSON.stringify({ filename: State.currentNoteFilename })
+      );
       pushRecentNote(State.currentNoteFilename);
     }
     restoreViewPrefs(view, State.currentNoteFilename);
     persistViewPrefs();
-    sendToPlugin("saveView", JSON.stringify({ view, noteFilename: State.currentNoteFilename }));
+    sendToPlugin(
+      "saveView",
+      JSON.stringify({ view, noteFilename: State.currentNoteFilename })
+    );
     var allNav = document.querySelectorAll(".cl-nav-item");
-    for (var i = 0; i < allNav.length; i++) allNav[i].classList.remove("cl-nav-active");
+    for (var i = 0; i < allNav.length; i++)
+      allNav[i].classList.remove("cl-nav-active");
     item.classList.add("cl-nav-active");
     renderCurrentView();
   }
@@ -2881,7 +4087,7 @@
     var dragging = false;
     var startX = 0;
     var startWidth = 0;
-    resizer.addEventListener("mousedown", function(e) {
+    resizer.addEventListener("mousedown", function (e) {
       if (window.innerWidth <= 600) return;
       dragging = true;
       startX = e.clientX;
@@ -2890,20 +4096,26 @@
       resizer.classList.add("cl-resizer-active");
       e.preventDefault();
     });
-    document.addEventListener("mousemove", function(e) {
+    document.addEventListener("mousemove", function (e) {
       if (!dragging) return;
       var newWidth = startWidth + (e.clientX - startX);
       if (newWidth < SIDEBAR_MIN_WIDTH) newWidth = SIDEBAR_MIN_WIDTH;
       if (newWidth > SIDEBAR_MAX_WIDTH) newWidth = SIDEBAR_MAX_WIDTH;
-      document.documentElement.style.setProperty("--cl-sidebar-width", newWidth + "px");
+      document.documentElement.style.setProperty(
+        "--cl-sidebar-width",
+        newWidth + "px"
+      );
     });
-    document.addEventListener("mouseup", function() {
+    document.addEventListener("mouseup", function () {
       if (!dragging) return;
       dragging = false;
       document.body.classList.remove("cl-resizing");
       resizer.classList.remove("cl-resizer-active");
       var finalWidth = sidebar.getBoundingClientRect().width;
-      sendToPlugin("saveSidebarWidth", JSON.stringify({ width: Math.round(finalWidth) }));
+      sendToPlugin(
+        "saveSidebarWidth",
+        JSON.stringify({ width: Math.round(finalWidth) })
+      );
     });
   }
 
@@ -2917,7 +4129,8 @@
         State.today = data.today || "";
         State.currentWeek = data.currentWeek || "";
         if (data.lastView) State.currentView = data.lastView;
-        if (data.lastNoteFilename && data.lastView === "note") State.currentNoteFilename = data.lastNoteFilename;
+        if (data.lastNoteFilename && data.lastView === "note")
+          State.currentNoteFilename = data.lastNoteFilename;
         if (data.collapsedAreas) {
           try {
             State.collapsedAreas = JSON.parse(data.collapsedAreas);
@@ -2935,8 +4148,10 @@
         State.hideEmptyProjects = !!data.hideEmptyProjects;
         State.hideNonProjects = !!data.hideNonProjects;
         State.hidePaused = !!data.hidePaused;
-        if (typeof data.inboxLookbackDays === "number") State.inboxLookbackDays = data.inboxLookbackDays;
-        if (typeof data.upcomingLookaheadDays === "number") State.upcomingLookaheadDays = data.upcomingLookaheadDays;
+        if (typeof data.inboxLookbackDays === "number")
+          State.inboxLookbackDays = data.inboxLookbackDays;
+        if (typeof data.upcomingLookaheadDays === "number")
+          State.upcomingLookaheadDays = data.upcomingLookaheadDays;
         if (data.recentNotes) {
           try {
             var parsedRecents = JSON.parse(data.recentNotes);
@@ -2955,14 +4170,16 @@
                 }
               }
             }
-          } catch (e) {
-          }
+          } catch (e) {}
         }
         applySidebarWidth(data.sidebarWidth);
         restoreViewPrefs(State.currentView, State.currentNoteFilename);
         renderSidebar();
         if (State.currentView === "note" && State.currentNoteFilename) {
-          sendToPlugin("requestNoteContent", JSON.stringify({ filename: State.currentNoteFilename }));
+          sendToPlugin(
+            "requestNoteContent",
+            JSON.stringify({ filename: State.currentNoteFilename })
+          );
         }
         renderCurrentView();
         break;
@@ -2993,7 +4210,10 @@
             State.currentView = "inbox";
             State.currentNoteFilename = null;
             State.noteContent = null;
-            sendToPlugin("saveView", JSON.stringify({ view: "inbox", noteFilename: null }));
+            sendToPlugin(
+              "saveView",
+              JSON.stringify({ view: "inbox", noteFilename: null })
+            );
           }
           sendToPlugin("ready", "{}");
         } else {
@@ -3003,14 +4223,26 @@
       case "NOTE_FRONTMATTER_UPDATED":
         if (State.noteContent && State.noteContent.filename === data.filename) {
           State.noteContent.frontmatter = data.frontmatter || {};
-          State.noteContent.bgColorDark = data.bgColorDark || State.noteContent.bgColorDark;
+          State.noteContent.bgColorDark =
+            data.bgColorDark || State.noteContent.bgColorDark;
         }
-        (function() {
+        (function () {
           var fnFm = data.filename;
           var newFm = data.frontmatter || {};
           var newRdd = reviewDueDaysFromFm(newFm);
-          var newStatus = newFm.status === "paused" || newFm.status === "someday" || newFm.status === "completed" || newFm.status === "canceled" ? newFm.status : null;
-          var newType = newFm.type === "area" ? "area" : newFm.type === "project" ? "project" : "";
+          var newStatus =
+            newFm.status === "paused" ||
+            newFm.status === "someday" ||
+            newFm.status === "completed" ||
+            newFm.status === "canceled"
+              ? newFm.status
+              : null;
+          var newType =
+            newFm.type === "area"
+              ? "area"
+              : newFm.type === "project"
+                ? "project"
+                : "";
           var newDue = newFm.due || null;
           function apply(target) {
             target.reviewedDate = newFm.reviewed || null;
@@ -3067,7 +4299,8 @@
             notes[ni].status = nm.status || null;
             notes[ni].reviewedDate = nm.reviewedDate || null;
             notes[ni].reviewInterval = nm.reviewInterval || null;
-            notes[ni].reviewDueDays = nm.reviewDueDays == null ? null : nm.reviewDueDays;
+            notes[ni].reviewDueDays =
+              nm.reviewDueDays == null ? null : nm.reviewDueDays;
           }
         }
       }
@@ -3083,7 +4316,8 @@
           State.notes[li].status = nm.status || null;
           State.notes[li].reviewedDate = nm.reviewedDate || null;
           State.notes[li].reviewInterval = nm.reviewInterval || null;
-          State.notes[li].reviewDueDays = nm.reviewDueDays == null ? null : nm.reviewDueDays;
+          State.notes[li].reviewDueDays =
+            nm.reviewDueDays == null ? null : nm.reviewDueDays;
         }
       }
     }
@@ -3123,7 +4357,9 @@
       }
     }
     if (sourceIndent === 0) {
-      var heads = container.querySelectorAll(".cl-note-heading[data-line-index]");
+      var heads = container.querySelectorAll(
+        ".cl-note-heading[data-line-index]"
+      );
       for (var h = 0; h < heads.length; h++) siblings.push(heads[h]);
     }
     return siblings;
@@ -3193,7 +4429,8 @@
     var childCount = parseInt(sourceRow.dataset.childCount, 10) || 0;
     var targetLineIndex = parseInt(dropTarget.el.dataset.lineIndex, 10);
     if (dropTarget.position === "after") {
-      var targetChildCount = parseInt(dropTarget.el.dataset.childCount, 10) || 0;
+      var targetChildCount =
+        parseInt(dropTarget.el.dataset.childCount, 10) || 0;
       targetLineIndex = targetLineIndex + targetChildCount + 1;
     }
     var sourceRef = sourceRow.closest(".cl-indent-wrap") || sourceRow;
@@ -3203,12 +4440,15 @@
     } else {
       targetRef.parentNode.insertBefore(sourceRef, targetRef.nextSibling);
     }
-    sendToPlugin("reorderTask", JSON.stringify({
-      filename: State.currentNoteFilename,
-      sourceLineIndex,
-      childCount,
-      targetLineIndex
-    }));
+    sendToPlugin(
+      "reorderTask",
+      JSON.stringify({
+        filename: State.currentNoteFilename,
+        sourceLineIndex,
+        childCount,
+        targetLineIndex
+      })
+    );
   }
   function dragCleanup() {
     if (!dragState) return;
@@ -3251,7 +4491,7 @@
     dragState.cloneEl = clone;
     dragState.indicatorEl = indicator;
     dragState.siblings = siblings;
-    dragState.scrollInterval = setInterval(function() {
+    dragState.scrollInterval = setInterval(function () {
       if (dragState && dragState.phase === "dragging") {
         dragAutoScroll(dragState.currentY);
       }
@@ -3286,10 +4526,15 @@
   }
   function attachDragListeners(mainEl) {
     if (!mainEl) return;
-    mainEl.addEventListener("mousedown", function(e) {
+    mainEl.addEventListener("mousedown", function (e) {
       if (State.currentView !== "note") return;
       if (e.button !== 0) return;
-      if (e.target.closest(".cl-cb") || e.target.closest(".cl-task-editor") || e.target.closest(".cl-quick-add")) return;
+      if (
+        e.target.closest(".cl-cb") ||
+        e.target.closest(".cl-task-editor") ||
+        e.target.closest(".cl-quick-add")
+      )
+        return;
       var row = dragGetTaskRow(e.target);
       if (!row) return;
       var startY = e.clientY;
@@ -3309,7 +4554,7 @@
         currentTarget: null,
         siblings: null,
         scrollInterval: null,
-        timer: setTimeout(function() {
+        timer: setTimeout(function () {
           if (dragState && dragState.phase === "pending") {
             e.preventDefault();
             dragStart(row, startY, startX);
@@ -3317,7 +4562,7 @@
         }, DRAG_LONG_PRESS_MS)
       };
     });
-    mainEl.addEventListener("mousemove", function(e) {
+    mainEl.addEventListener("mousemove", function (e) {
       if (!dragState) return;
       if (dragState.phase === "pending") {
         var dx = e.clientX - dragState.startX;
@@ -3333,67 +4578,80 @@
         dragMove(e.clientY, e.clientX);
       }
     });
-    mainEl.addEventListener("mouseup", function() {
+    mainEl.addEventListener("mouseup", function () {
       if (!dragState) return;
       dragEnd();
     });
-    mainEl.addEventListener("touchstart", function(e) {
-      if (State.currentView !== "note") return;
-      if (e.touches.length !== 1) return;
-      if (e.target.closest(".cl-cb") || e.target.closest(".cl-task-editor") || e.target.closest(".cl-quick-add")) return;
-      var row = dragGetTaskRow(e.target);
-      if (!row) return;
-      var touch = e.touches[0];
-      var startY = touch.clientY;
-      var startX = touch.clientX;
-      dragState = {
-        phase: "pending",
-        sourceEl: row,
-        sourceId: row.dataset.taskId,
-        sourceLineIndex: parseInt(row.dataset.lineIndex, 10),
-        childCount: parseInt(row.dataset.childCount, 10) || 0,
-        indentLevel: parseInt(row.dataset.indent, 10) || 0,
-        cloneEl: null,
-        indicatorEl: null,
-        startY,
-        startX,
-        currentY: startY,
-        currentTarget: null,
-        siblings: null,
-        scrollInterval: null,
-        timer: setTimeout(function() {
-          if (dragState && dragState.phase === "pending") {
-            dragStart(row, startY, startX);
+    mainEl.addEventListener(
+      "touchstart",
+      function (e) {
+        if (State.currentView !== "note") return;
+        if (e.touches.length !== 1) return;
+        if (
+          e.target.closest(".cl-cb") ||
+          e.target.closest(".cl-task-editor") ||
+          e.target.closest(".cl-quick-add")
+        )
+          return;
+        var row = dragGetTaskRow(e.target);
+        if (!row) return;
+        var touch = e.touches[0];
+        var startY = touch.clientY;
+        var startX = touch.clientX;
+        dragState = {
+          phase: "pending",
+          sourceEl: row,
+          sourceId: row.dataset.taskId,
+          sourceLineIndex: parseInt(row.dataset.lineIndex, 10),
+          childCount: parseInt(row.dataset.childCount, 10) || 0,
+          indentLevel: parseInt(row.dataset.indent, 10) || 0,
+          cloneEl: null,
+          indicatorEl: null,
+          startY,
+          startX,
+          currentY: startY,
+          currentTarget: null,
+          siblings: null,
+          scrollInterval: null,
+          timer: setTimeout(function () {
+            if (dragState && dragState.phase === "pending") {
+              dragStart(row, startY, startX);
+            }
+          }, DRAG_LONG_PRESS_MS)
+        };
+      },
+      { passive: true }
+    );
+    mainEl.addEventListener(
+      "touchmove",
+      function (e) {
+        if (!dragState) return;
+        var touch = e.touches[0];
+        if (dragState.phase === "pending") {
+          var dx = touch.clientX - dragState.startX;
+          var dy = touch.clientY - dragState.startY;
+          if (Math.sqrt(dx * dx + dy * dy) > DRAG_CANCEL_DISTANCE) {
+            clearTimeout(dragState.timer);
+            dragState = null;
           }
-        }, DRAG_LONG_PRESS_MS)
-      };
-    }, { passive: true });
-    mainEl.addEventListener("touchmove", function(e) {
-      if (!dragState) return;
-      var touch = e.touches[0];
-      if (dragState.phase === "pending") {
-        var dx = touch.clientX - dragState.startX;
-        var dy = touch.clientY - dragState.startY;
-        if (Math.sqrt(dx * dx + dy * dy) > DRAG_CANCEL_DISTANCE) {
-          clearTimeout(dragState.timer);
-          dragState = null;
+          return;
         }
-        return;
-      }
-      if (dragState.phase === "dragging") {
-        e.preventDefault();
-        dragMove(touch.clientY, touch.clientX);
-      }
-    }, { passive: false });
-    mainEl.addEventListener("touchend", function() {
+        if (dragState.phase === "dragging") {
+          e.preventDefault();
+          dragMove(touch.clientY, touch.clientX);
+        }
+      },
+      { passive: false }
+    );
+    mainEl.addEventListener("touchend", function () {
       if (!dragState) return;
       dragEnd();
     });
-    mainEl.addEventListener("touchcancel", function() {
+    mainEl.addEventListener("touchcancel", function () {
       if (!dragState) return;
       dragCancel();
     });
-    document.addEventListener("keydown", function(e) {
+    document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && dragState && dragState.phase === "dragging") {
         e.preventDefault();
         dragCancel();
@@ -3429,7 +4687,7 @@
         dot2.className = "cl-skeleton-dot";
         var bar2 = document.createElement("div");
         bar2.className = "cl-skeleton-bar";
-        bar2.style.width = 50 + j * 13 % 40 + "%";
+        bar2.style.width = 50 + ((j * 13) % 40) + "%";
         row2.appendChild(dot2);
         row2.appendChild(bar2);
         inner.appendChild(row2);
@@ -3449,9 +4707,9 @@
       main.replaceChildren(overlay);
     }
   }
-  document.addEventListener("DOMContentLoaded", function() {
+  document.addEventListener("DOMContentLoaded", function () {
     renderInitialLoading();
-    setTimeout(function() {
+    setTimeout(function () {
       sendToPlugin("ready", "{}");
     }, 100);
     attachDragListeners(document.getElementById("cl-main"));
@@ -3459,14 +4717,14 @@
     var toggle = document.getElementById("cl-sidebar-toggle");
     var overlay = document.getElementById("cl-sidebar-overlay");
     if (toggle) {
-      toggle.addEventListener("click", function() {
+      toggle.addEventListener("click", function () {
         var sidebar = document.getElementById("cl-sidebar");
         if (sidebar) sidebar.classList.toggle("cl-sidebar-open");
         if (overlay) overlay.classList.toggle("cl-sidebar-open");
       });
     }
     if (overlay) {
-      overlay.addEventListener("click", function() {
+      overlay.addEventListener("click", function () {
         var sidebar = document.getElementById("cl-sidebar");
         if (sidebar) sidebar.classList.remove("cl-sidebar-open");
         overlay.classList.remove("cl-sidebar-open");
@@ -3484,7 +4742,7 @@
     var score = 0;
     if (title.indexOf(q) === 0) score += 100;
     else if (title.indexOf(q) >= 0) score += 50 - title.indexOf(q);
-    var words = title.split(/[\s\-_/]+/).filter(function(w2) {
+    var words = title.split(/[\s\-_/]+/).filter(function (w2) {
       return w2.length > 0;
     });
     var initials = "";
@@ -3497,7 +4755,8 @@
     var notes = State.notes || [];
     if (!query) {
       var byFilename = {};
-      for (var ni = 0; ni < notes.length; ni++) byFilename[notes[ni].filename] = notes[ni];
+      for (var ni = 0; ni < notes.length; ni++)
+        byFilename[notes[ni].filename] = notes[ni];
       var ordered = [];
       var seen = {};
       var recents = State.recentNotes || [];
@@ -3521,11 +4780,11 @@
       var s = quickJumpScore(notes[i], query);
       if (s > 0) scored.push({ note: notes[i], score: s });
     }
-    scored.sort(function(a, b) {
+    scored.sort(function (a, b) {
       if (b.score !== a.score) return b.score - a.score;
       return (a.note.title || "").localeCompare(b.note.title || "");
     });
-    return scored.slice(0, 12).map(function(x) {
+    return scored.slice(0, 12).map(function (x) {
       return x.note;
     });
   }
@@ -3539,7 +4798,20 @@
         var folderPath = (n.filename || "").replace(/\/[^/]+$/, "");
         var icon = renderProjectIcon(n, 16);
         var sel = i === selectedIndex ? " cl-jump-result-active" : "";
-        html += '<div class="cl-jump-result' + sel + '" data-filename="' + esc(n.filename) + '" data-index="' + i + '"><span class="cl-jump-icon">' + icon + '</span><span class="cl-jump-title">' + esc(n.title || "") + '</span><span class="cl-jump-folder">' + esc(folderPath) + "</span></div>";
+        html +=
+          '<div class="cl-jump-result' +
+          sel +
+          '" data-filename="' +
+          esc(n.filename) +
+          '" data-index="' +
+          i +
+          '"><span class="cl-jump-icon">' +
+          icon +
+          '</span><span class="cl-jump-title">' +
+          esc(n.title || "") +
+          '</span><span class="cl-jump-folder">' +
+          esc(folderPath) +
+          "</span></div>";
       }
     }
     container.innerHTML = html;
@@ -3552,7 +4824,8 @@
     }
     var overlay = document.createElement("div");
     overlay.className = "cl-jump-overlay";
-    overlay.innerHTML = '<div class="cl-jump-modal"><input class="cl-jump-input" type="text" placeholder="Jump to project or area\u2026" autocomplete="off" spellcheck="false"><div class="cl-jump-results"></div></div>';
+    overlay.innerHTML =
+      '<div class="cl-jump-modal"><input class="cl-jump-input" type="text" placeholder="Jump to project or area\u2026" autocomplete="off" spellcheck="false"><div class="cl-jump-results"></div></div>';
     document.body.appendChild(overlay);
     var input = overlay.querySelector(".cl-jump-input");
     var resultsEl = overlay.querySelector(".cl-jump-results");
@@ -3566,12 +4839,12 @@
       close();
       navigateToProjectNote(filename);
     }
-    input.addEventListener("input", function() {
+    input.addEventListener("input", function () {
       state.results = quickJumpResults(input.value);
       state.selected = 0;
       renderQuickJumpResults(resultsEl, state.results, state.selected);
     });
-    input.addEventListener("keydown", function(e) {
+    input.addEventListener("keydown", function (e) {
       if (e.key === "Escape") {
         e.preventDefault();
         close();
@@ -3598,15 +4871,15 @@
         return;
       }
     });
-    resultsEl.addEventListener("click", function(e) {
+    resultsEl.addEventListener("click", function (e) {
       var row = e.target.closest(".cl-jump-result");
       if (!row) return;
       jumpTo(row.dataset.filename);
     });
-    overlay.addEventListener("click", function(e) {
+    overlay.addEventListener("click", function (e) {
       if (e.target === overlay) close();
     });
-    setTimeout(function() {
+    setTimeout(function () {
       input.focus();
     }, 0);
   }
@@ -3614,7 +4887,8 @@
   // src/webview/keyboard.js
   function focusedTaskRow() {
     var rows = document.querySelectorAll(".cl-task-row");
-    if (State.focusedTaskIndex >= 0 && State.focusedTaskIndex < rows.length) return rows[State.focusedTaskIndex];
+    if (State.focusedTaskIndex >= 0 && State.focusedTaskIndex < rows.length)
+      return rows[State.focusedTaskIndex];
     return null;
   }
   function showInlineNewItem(kind, afterRow) {
@@ -3625,7 +4899,8 @@
     var input = document.createElement("input");
     input.type = "text";
     input.className = "cl-quick-add-input";
-    input.placeholder = kind === "heading" ? "New heading\u2026" : "New task\u2026";
+    input.placeholder =
+      kind === "heading" ? "New heading\u2026" : "New task\u2026";
     wrap.appendChild(input);
     if (afterRow) {
       afterRow.insertAdjacentElement("afterend", wrap);
@@ -3635,10 +4910,11 @@
       body.insertBefore(wrap, body.firstChild);
     }
     var allRows = document.querySelectorAll(".cl-task-row");
-    for (var fr = 0; fr < allRows.length; fr++) allRows[fr].classList.remove("cl-focused");
+    for (var fr = 0; fr < allRows.length; fr++)
+      allRows[fr].classList.remove("cl-focused");
     State.focusedTaskIndex = -1;
     var done = false;
-    input.addEventListener("keydown", function(ev) {
+    input.addEventListener("keydown", function (ev) {
       if (ev.key === "Enter") {
         ev.preventDefault();
         ev.stopPropagation();
@@ -3646,12 +4922,33 @@
         done = true;
         if (wrap.parentNode) wrap.remove();
         if (!text) return;
-        var afterIdx = afterRow ? parseInt(afterRow.dataset.lineIndex, 10) : null;
+        var afterIdx = afterRow
+          ? parseInt(afterRow.dataset.lineIndex, 10)
+          : null;
         if (kind === "heading") {
-          sendToPlugin("insertHeading", JSON.stringify({ filename: State.currentNoteFilename, content: text, afterLineIndex: afterIdx === null || isNaN(afterIdx) ? null : afterIdx }));
+          sendToPlugin(
+            "insertHeading",
+            JSON.stringify({
+              filename: State.currentNoteFilename,
+              content: text,
+              afterLineIndex:
+                afterIdx === null || isNaN(afterIdx) ? null : afterIdx
+            })
+          );
         } else {
-          var indent = afterRow ? parseInt(afterRow.dataset.indent, 10) || 0 : 0;
-          sendToPlugin("createTask", JSON.stringify({ filename: State.currentNoteFilename, content: text, afterLineIndex: afterIdx === null || isNaN(afterIdx) ? null : afterIdx, indent }));
+          var indent = afterRow
+            ? parseInt(afterRow.dataset.indent, 10) || 0
+            : 0;
+          sendToPlugin(
+            "createTask",
+            JSON.stringify({
+              filename: State.currentNoteFilename,
+              content: text,
+              afterLineIndex:
+                afterIdx === null || isNaN(afterIdx) ? null : afterIdx,
+              indent
+            })
+          );
         }
       } else if (ev.key === "Escape") {
         ev.preventDefault();
@@ -3660,12 +4957,12 @@
         if (wrap.parentNode) wrap.remove();
       }
     });
-    input.addEventListener("blur", function() {
+    input.addEventListener("blur", function () {
       if (!done && wrap.parentNode) wrap.remove();
     });
     input.focus();
   }
-  document.addEventListener("keydown", function(e) {
+  document.addEventListener("keydown", function (e) {
     if (e.metaKey && e.key === "Enter") {
       if (State.expandedTaskId) {
         e.preventDefault();
@@ -3691,7 +4988,12 @@
     }
     if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
       var activeForCheat = document.activeElement;
-      if (activeForCheat && (activeForCheat.tagName === "INPUT" || activeForCheat.tagName === "TEXTAREA")) return;
+      if (
+        activeForCheat &&
+        (activeForCheat.tagName === "INPUT" ||
+          activeForCheat.tagName === "TEXTAREA")
+      )
+        return;
       e.preventDefault();
       openShortcutsCheatsheet();
       return;
@@ -3702,7 +5004,7 @@
         e.preventDefault();
         State.editDraft.scheduledDate = tomorrow;
         State.editDraft.scheduledWeek = null;
-        State.editDraft.tags = State.editDraft.tags.filter(function(t) {
+        State.editDraft.tags = State.editDraft.tags.filter(function (t) {
           return t !== "#someday" && t !== "#evening";
         });
         updateDateChip();
@@ -3721,7 +5023,7 @@
         e.preventDefault();
         State.editDraft.scheduledDate = State.today;
         State.editDraft.scheduledWeek = null;
-        State.editDraft.tags = State.editDraft.tags.filter(function(t) {
+        State.editDraft.tags = State.editDraft.tags.filter(function (t) {
           return t !== "#someday" && t !== "#evening";
         });
         updateDateChip();
@@ -3735,10 +5037,17 @@
       }
       return;
     }
-    if (e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey && (e.key === "e" || e.key === "E")) {
+    if (
+      e.metaKey &&
+      !e.shiftKey &&
+      !e.altKey &&
+      !e.ctrlKey &&
+      (e.key === "e" || e.key === "E")
+    ) {
       if (State.editDraft) {
         e.preventDefault();
-        if (State.editDraft.tags.indexOf("#evening") < 0) State.editDraft.tags.push("#evening");
+        if (State.editDraft.tags.indexOf("#evening") < 0)
+          State.editDraft.tags.push("#evening");
         State.editDraft.scheduledDate = State.today;
         State.editDraft.scheduledWeek = null;
         updateDateChip();
@@ -3757,7 +5066,7 @@
         e.preventDefault();
         State.editDraft.scheduledDate = null;
         State.editDraft.scheduledWeek = null;
-        State.editDraft.tags = State.editDraft.tags.filter(function(t) {
+        State.editDraft.tags = State.editDraft.tags.filter(function (t) {
           return t !== "#evening";
         });
         updateDateChip();
@@ -3771,11 +5080,25 @@
       }
       return;
     }
-    if (e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey && /^[1-5]$/.test(e.key)) {
-      var viewMap = { "1": "inbox", "2": "today", "3": "upcoming", "4": "anytime", "5": "someday" };
+    if (
+      e.metaKey &&
+      !e.shiftKey &&
+      !e.altKey &&
+      !e.ctrlKey &&
+      /^[1-5]$/.test(e.key)
+    ) {
+      var viewMap = {
+        1: "inbox",
+        2: "today",
+        3: "upcoming",
+        4: "anytime",
+        5: "someday"
+      };
       var targetView = viewMap[e.key];
       if (targetView) {
-        var navItem = document.querySelector('.cl-nav-item[data-view="' + targetView + '"]');
+        var navItem = document.querySelector(
+          '.cl-nav-item[data-view="' + targetView + '"]'
+        );
         if (navItem) {
           e.preventDefault();
           if (State.expandedTaskId) collapseTask();
@@ -3786,9 +5109,19 @@
       }
       return;
     }
-    if (e.metaKey && !e.shiftKey && !e.altKey && !e.ctrlKey && (e.key === "Backspace" || e.key === "Delete")) {
+    if (
+      e.metaKey &&
+      !e.shiftKey &&
+      !e.altKey &&
+      !e.ctrlKey &&
+      (e.key === "Backspace" || e.key === "Delete")
+    ) {
       var active = document.activeElement;
-      if (active && (active.tagName === "INPUT" || active.tagName === "TEXTAREA")) return;
+      if (
+        active &&
+        (active.tagName === "INPUT" || active.tagName === "TEXTAREA")
+      )
+        return;
       var deleteId = State.expandedTaskId || getFocusedTaskId();
       if (deleteId) {
         e.preventDefault();
@@ -3801,7 +5134,13 @@
       openQuickJump();
       return;
     }
-    if (e.metaKey && e.ctrlKey && !e.shiftKey && !e.altKey && e.code === "KeyN") {
+    if (
+      e.metaKey &&
+      e.ctrlKey &&
+      !e.shiftKey &&
+      !e.altKey &&
+      e.code === "KeyN"
+    ) {
       if (State.currentView !== "note") return;
       e.preventDefault();
       var ctrlRow = focusedTaskRow();
@@ -3812,16 +5151,31 @@
       }
       return;
     }
-    if (e.metaKey && e.shiftKey && !e.ctrlKey && !e.altKey && e.code === "KeyN") {
+    if (
+      e.metaKey &&
+      e.shiftKey &&
+      !e.ctrlKey &&
+      !e.altKey &&
+      e.code === "KeyN"
+    ) {
       if (State.currentView !== "note") return;
       e.preventDefault();
       showInlineNewItem("heading", focusedTaskRow());
       return;
     }
-    if (e.metaKey && e.altKey && !e.ctrlKey && !e.shiftKey && e.code === "KeyN") {
+    if (
+      e.metaKey &&
+      e.altKey &&
+      !e.ctrlKey &&
+      !e.shiftKey &&
+      e.code === "KeyN"
+    ) {
       if (State.currentView !== "note" || !State.currentNoteFilename) return;
       e.preventDefault();
-      sendToPlugin("createProjectNote", JSON.stringify({ filename: State.currentNoteFilename }));
+      sendToPlugin(
+        "createProjectNote",
+        JSON.stringify({ filename: State.currentNoteFilename })
+      );
       return;
     }
     if (e.metaKey && e.key === "n") {
@@ -3830,32 +5184,54 @@
       if (quickAdd) quickAdd.focus();
       return;
     }
-    if (e.metaKey && e.ctrlKey && !e.shiftKey && !e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+    if (
+      e.metaKey &&
+      e.ctrlKey &&
+      !e.shiftKey &&
+      !e.altKey &&
+      (e.key === "ArrowUp" || e.key === "ArrowDown")
+    ) {
       if (State.currentView !== "note") return;
       var moveRow = focusedTaskRow();
       if (!moveRow) return;
       e.preventDefault();
       var moveCands = dragFindSiblings(moveRow).slice();
       moveCands.push(moveRow);
-      moveCands.sort(function(a, b) {
+      moveCands.sort(function (a, b) {
         return a.getBoundingClientRect().top - b.getBoundingClientRect().top;
       });
       var moveIdx = moveCands.indexOf(moveRow);
-      var neighbor = e.key === "ArrowUp" ? moveCands[moveIdx - 1] : moveCands[moveIdx + 1];
+      var neighbor =
+        e.key === "ArrowUp" ? moveCands[moveIdx - 1] : moveCands[moveIdx + 1];
       if (!neighbor) return;
       State.pendingFocusTaskId = moveRow.dataset.taskId;
-      dragCommit(moveRow, { el: neighbor, position: e.key === "ArrowUp" ? "before" : "after" });
+      dragCommit(moveRow, {
+        el: neighbor,
+        position: e.key === "ArrowUp" ? "before" : "after"
+      });
       return;
     }
-    if (!State.expandedTaskId && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+    if (
+      !State.expandedTaskId &&
+      (e.key === "ArrowUp" || e.key === "ArrowDown")
+    ) {
       var arrowActive = document.activeElement;
-      if (arrowActive && (arrowActive.tagName === "INPUT" || arrowActive.tagName === "TEXTAREA")) return;
+      if (
+        arrowActive &&
+        (arrowActive.tagName === "INPUT" || arrowActive.tagName === "TEXTAREA")
+      )
+        return;
       e.preventDefault();
       var rows = document.querySelectorAll(".cl-task-row");
       if (rows.length === 0) return;
-      if (e.key === "ArrowDown") State.focusedTaskIndex = Math.min(State.focusedTaskIndex + 1, rows.length - 1);
+      if (e.key === "ArrowDown")
+        State.focusedTaskIndex = Math.min(
+          State.focusedTaskIndex + 1,
+          rows.length - 1
+        );
       else State.focusedTaskIndex = Math.max(State.focusedTaskIndex - 1, 0);
-      for (var ri = 0; ri < rows.length; ri++) rows[ri].classList.remove("cl-focused");
+      for (var ri = 0; ri < rows.length; ri++)
+        rows[ri].classList.remove("cl-focused");
       if (rows[State.focusedTaskIndex]) {
         rows[State.focusedTaskIndex].classList.add("cl-focused");
         rows[State.focusedTaskIndex].scrollIntoView({ block: "nearest" });
@@ -3863,7 +5239,11 @@
     }
     if (e.key === "Enter" && !State.expandedTaskId) {
       var enterActive = document.activeElement;
-      if (enterActive && (enterActive.tagName === "INPUT" || enterActive.tagName === "TEXTAREA")) return;
+      if (
+        enterActive &&
+        (enterActive.tagName === "INPUT" || enterActive.tagName === "TEXTAREA")
+      )
+        return;
       var enterRows = document.querySelectorAll(".cl-task-row");
       if (State.focusedTaskIndex >= 0 && enterRows[State.focusedTaskIndex]) {
         e.preventDefault();
@@ -3872,7 +5252,11 @@
     }
     if (e.key === " " && !State.expandedTaskId) {
       var spaceActive = document.activeElement;
-      if (spaceActive && (spaceActive.tagName === "INPUT" || spaceActive.tagName === "TEXTAREA")) return;
+      if (
+        spaceActive &&
+        (spaceActive.tagName === "INPUT" || spaceActive.tagName === "TEXTAREA")
+      )
+        return;
       var spaceRows = document.querySelectorAll(".cl-task-row");
       if (State.focusedTaskIndex >= 0 && spaceRows[State.focusedTaskIndex]) {
         e.preventDefault();
@@ -3901,7 +5285,9 @@
   function navigateToProjectNote(filename) {
     if (!filename) return;
     if (State.expandedTaskId) collapseTask();
-    var navItem = document.querySelector('.cl-nav-item[data-filename="' + filename + '"]');
+    var navItem = document.querySelector(
+      '.cl-nav-item[data-filename="' + filename + '"]'
+    );
     if (navItem) {
       navItem.click();
       navItem.scrollIntoView({ block: "nearest" });
@@ -3916,7 +5302,10 @@
     State.expandedTaskId = null;
     State.editDraft = null;
     sendToPlugin("requestNoteContent", JSON.stringify({ filename }));
-    sendToPlugin("saveView", JSON.stringify({ view: "note", noteFilename: filename }));
+    sendToPlugin(
+      "saveView",
+      JSON.stringify({ view: "note", noteFilename: filename })
+    );
     pushRecentNote(filename);
     renderSidebar();
     renderCurrentView();
@@ -3927,15 +5316,16 @@
     var main = document.getElementById("cl-main");
     if (!main) return;
     _mainListenersAttached = true;
-    main.addEventListener("dblclick", function(e) {
-      if (e.target.closest(".cl-cb") || e.target.closest(".cl-task-editor")) return;
+    main.addEventListener("dblclick", function (e) {
+      if (e.target.closest(".cl-cb") || e.target.closest(".cl-task-editor"))
+        return;
       var row = e.target.closest(".cl-task-row");
       if (row) {
         e.preventDefault();
         expandTask(row.dataset.taskId);
       }
     });
-    main.addEventListener("click", function(e) {
+    main.addEventListener("click", function (e) {
       if (consumeDragClickSuppression()) {
         e.preventDefault();
         e.stopPropagation();
@@ -3943,7 +5333,11 @@
       }
       if (e.target.closest("a.cl-link")) return;
       var clickedRow = e.target.closest(".cl-task-row");
-      if (clickedRow && !e.target.closest(".cl-cb") && !e.target.closest("[data-action]")) {
+      if (
+        clickedRow &&
+        !e.target.closest(".cl-cb") &&
+        !e.target.closest("[data-action]")
+      ) {
         var rows = document.querySelectorAll(".cl-task-row");
         for (var ri = 0; ri < rows.length; ri++) {
           rows[ri].classList.remove("cl-focused");
@@ -3963,7 +5357,8 @@
           break;
         case "filterTag": {
           var newTag = target.dataset.tag || null;
-          State.filters.tag = newTag && State.filters.tag === newTag ? null : newTag;
+          State.filters.tag =
+            newTag && State.filters.tag === newTag ? null : newTag;
           saveCurrentViewPrefs();
           persistViewPrefs();
           renderCurrentView();
@@ -3971,7 +5366,8 @@
         }
         case "filterFolder": {
           var newFolder = target.dataset.folder || null;
-          State.filters.folder = newFolder && State.filters.folder === newFolder ? null : newFolder;
+          State.filters.folder =
+            newFolder && State.filters.folder === newFolder ? null : newFolder;
           saveCurrentViewPrefs();
           persistViewPrefs();
           renderCurrentView();
@@ -4016,7 +5412,10 @@
           break;
         case "openInEditor":
           if (target.dataset.filename) {
-            sendToPlugin("openNoteInEditor", JSON.stringify({ filename: target.dataset.filename }));
+            sendToPlugin(
+              "openNoteInEditor",
+              JSON.stringify({ filename: target.dataset.filename })
+            );
           }
           break;
         case "jumpToProjectNote": {
@@ -4043,10 +5442,13 @@
         case "markReviewedFromFooter": {
           var nc = State.noteContent;
           if (!nc) break;
-          sendToPlugin("updateNoteFrontmatter", JSON.stringify({
-            filename: nc.filename,
-            updates: { reviewed: State.today }
-          }));
+          sendToPlugin(
+            "updateNoteFrontmatter",
+            JSON.stringify({
+              filename: nc.filename,
+              updates: { reviewed: State.today }
+            })
+          );
           var footer = target.closest(".cl-review-footer");
           if (footer) footer.remove();
           break;
@@ -4067,8 +5469,14 @@
           var mcfn = target.dataset.filename || State.currentNoteFilename;
           if (!mcfn) break;
           closeProjectMenu();
-          sendToPlugin("moveCompletedToBottom", JSON.stringify({ filename: mcfn }));
-          sendToPlugin("requestNoteContent", JSON.stringify({ filename: mcfn }));
+          sendToPlugin(
+            "moveCompletedToBottom",
+            JSON.stringify({ filename: mcfn })
+          );
+          sendToPlugin(
+            "requestNoteContent",
+            JSON.stringify({ filename: mcfn })
+          );
           break;
         }
         case "archiveProject":
@@ -4080,7 +5488,11 @@
           var moved = 0;
           for (var rai = 0; rai < State.tasks.length; rai++) {
             var t = State.tasks[rai];
-            if (t.status === "open" && t.scheduledDate && t.scheduledDate < today) {
+            if (
+              t.status === "open" &&
+              t.scheduledDate &&
+              t.scheduledDate < today
+            ) {
               rescheduleTaskById(t.id, today);
               moved++;
             }
@@ -4098,19 +5510,19 @@
           var codeEl = pre.querySelector("code");
           if (!codeEl) break;
           var text = codeEl.textContent || "";
-          var done = function() {
+          var done = function () {
             var label = target.querySelector(".cl-code-copy-label");
             if (!label) return;
             var prev = label.textContent;
             label.textContent = "Copied";
             target.classList.add("cl-code-copy-done");
-            setTimeout(function() {
+            setTimeout(function () {
               label.textContent = prev;
               target.classList.remove("cl-code-copy-done");
             }, 1200);
           };
           if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(done, function() {
+            navigator.clipboard.writeText(text).then(done, function () {
               fallbackCopy(text, done);
             });
           } else {
@@ -4124,16 +5536,21 @@
           var heading = target.closest(".cl-note-heading");
           if (!heading) break;
           toggleHeadingFocusUI(heading);
-          sendToPlugin("toggleHeadingFocus", JSON.stringify({
-            filename: State.currentNoteFilename,
-            lineIndex: fLine
-          }));
+          sendToPlugin(
+            "toggleHeadingFocus",
+            JSON.stringify({
+              filename: State.currentNoteFilename,
+              lineIndex: fLine
+            })
+          );
           break;
         }
         case "toggleHeadingCollapse": {
           var lineIdx = parseInt(target.dataset.lineIndex, 10);
           if (isNaN(lineIdx) || !State.currentNoteFilename) break;
-          var body = document.querySelector('.cl-section-body[data-heading-line="' + lineIdx + '"]');
+          var body = document.querySelector(
+            '.cl-section-body[data-heading-line="' + lineIdx + '"]'
+          );
           if (body) {
             var nowHidden = body.style.display !== "none";
             body.style.display = nowHidden ? "none" : "";
@@ -4144,15 +5561,18 @@
             }
             target.classList.toggle("cl-always-visible", nowHidden);
           }
-          sendToPlugin("toggleHeadingCollapse", JSON.stringify({
-            filename: State.currentNoteFilename,
-            lineIndex: lineIdx
-          }));
+          sendToPlugin(
+            "toggleHeadingCollapse",
+            JSON.stringify({
+              filename: State.currentNoteFilename,
+              lineIndex: lineIdx
+            })
+          );
           break;
         }
       }
     });
-    main.addEventListener("change", function(e) {
+    main.addEventListener("change", function (e) {
       var target = e.target.closest("[data-action]");
       if (!target) return;
       var action = target.dataset.action;
@@ -4170,14 +5590,20 @@
         }
       }
     });
-    main.addEventListener("keydown", function(e) {
-      if (e.key === "Enter" && e.target.classList.contains("cl-quick-add-input")) {
+    main.addEventListener("keydown", function (e) {
+      if (
+        e.key === "Enter" &&
+        e.target.classList.contains("cl-quick-add-input")
+      ) {
         e.preventDefault();
         var content = e.target.value.trim();
         if (!content) return;
         var view = e.target.closest(".cl-quick-add").dataset.view;
         var todayFilename = State.today.replace(/-/g, "") + ".md";
-        var targetFilename = view === "note" && State.currentNoteFilename ? State.currentNoteFilename : todayFilename;
+        var targetFilename =
+          view === "note" && State.currentNoteFilename
+            ? State.currentNoteFilename
+            : todayFilename;
         var msg = { filename: targetFilename, content };
         if (view === "today") msg.scheduledDate = State.today;
         if (view === "someday") msg.tags = ["#someday"];
@@ -4199,7 +5625,7 @@
         if (add) {
           if (tags.indexOf(tag) < 0) tags = tags.concat([tag]);
         } else {
-          tags = tags.filter(function(t) {
+          tags = tags.filter(function (t) {
             return t !== tag;
           });
         }
@@ -4208,12 +5634,15 @@
       }
     }
     renderCurrentView();
-    sendToPlugin("setTaskTag", JSON.stringify({
-      filename,
-      lineIndex,
-      tag,
-      add: !!add
-    }));
+    sendToPlugin(
+      "setTaskTag",
+      JSON.stringify({
+        filename,
+        lineIndex,
+        tag,
+        add: !!add
+      })
+    );
   }
   function rescheduleTaskById(taskId, dateStr) {
     if (!taskId) return;
@@ -4229,12 +5658,15 @@
       }
     }
     renderCurrentView();
-    sendToPlugin("rescheduleTask", JSON.stringify({
-      filename,
-      lineIndex,
-      scheduledDate: dateStr || null,
-      scheduledWeek: null
-    }));
+    sendToPlugin(
+      "rescheduleTask",
+      JSON.stringify({
+        filename,
+        lineIndex,
+        scheduledDate: dateStr || null,
+        scheduledWeek: null
+      })
+    );
   }
   function getFocusedTaskId() {
     if (State.focusedTaskIndex < 0) return null;
@@ -4246,7 +5678,8 @@
     if (!taskId) return;
     for (var i = 0; i < State.tasks.length; i++) {
       if (State.tasks[i].id === taskId) {
-        State.tasks[i].status = State.tasks[i].status === "open" ? "done" : "open";
+        State.tasks[i].status =
+          State.tasks[i].status === "open" ? "done" : "open";
         break;
       }
     }
