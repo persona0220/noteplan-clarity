@@ -252,13 +252,27 @@
   }
   function addWeeks(weekStr, n) {
     var parts = weekStr.split("-W");
-    var year = parseInt(parts[0]);
-    var week = parseInt(parts[1]) + n;
-    while (week > 52) {
-      year++;
-      week -= 52;
-    }
-    return year + "-W" + String(week).padStart(2, "0");
+    var year = parseInt(parts[0], 10);
+    var week = parseInt(parts[1], 10);
+
+    // 해당 연도의 1월 4일을 기준으로 날짜 계산
+    var d = new Date(year, 0, 4);
+    d.setDate(d.getDate() + (week - 1) * 7 + n * 7);
+
+    // 계산된 날짜의 ISO 주차 다시 추출
+    var date = new Date(d.getTime());
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+    var week1 = new Date(date.getFullYear(), 0, 4);
+    var weekNum =
+      1 +
+      Math.round(
+        ((date.getTime() - week1.getTime()) / 86400000 -
+          3 +
+          ((week1.getDay() + 6) % 7)) /
+          7
+      );
+    return date.getFullYear() + "-W" + String(weekNum).padStart(2, "0");
   }
   function formatDateHeader(dateStr) {
     if (!dateStr || dateStr === "No Date") return dateStr;
@@ -643,6 +657,8 @@
   function getTasksForView(view) {
     var today = State.today;
     var currentWeek = State.currentWeek;
+    var currentMonth = today.substring(0, 7);
+    var currentYear = today.substring(0, 4);
     var result = [];
     var seenBlockIds = {};
     var needsDedup = view === "today" || view === "upcoming";
@@ -677,17 +693,17 @@
             match = true;
           break;
         case "anytime":
+          if (t.sourceType === "note") break;
           if (t.tags && t.tags.indexOf("#someday") >= 0) break;
           if (t.sourceType === "calendar") {
             if (t.sourceWeek && t.sourceWeek <= currentWeek) match = true;
-          } else if (
-            (!t.scheduledDate || t.scheduledDate <= today) &&
-            (!t.scheduledWeek || t.scheduledWeek <= currentWeek)
-          ) {
-            match = true;
+            else if (t.sourceMonth && t.sourceMonth <= currentMonth)
+              match = true;
+            else if (t.sourceYear && t.sourceYear <= currentYear) match = true;
           }
           break;
         case "someday":
+          if (t.sourceType === "note") break;
           if (t.tags && t.tags.indexOf("#someday") >= 0) match = true;
           break;
       }
@@ -2429,9 +2445,10 @@
               nextMon,
               inAWeek,
               viewYear,
-              viewMonth
+              viewMonth,
+              "selectDate"
             );
-          else body.innerHTML = renderDateWeekTab();
+          else body.innerHTML = renderDateWeekTab("selectWeek");
         }
         return;
       }
@@ -2460,7 +2477,8 @@
             nextMon,
             inAWeek,
             viewYear,
-            viewMonth
+            viewMonth,
+            "selectWeek"
           );
         return;
       }
@@ -2488,38 +2506,57 @@
       }
     });
   }
-  function renderDateDayTab(today, tmr, nextMon, inAWeek, viewYear, viewMonth) {
+
+  function renderDateDayTab(
+    today,
+    tmr,
+    nextMon,
+    inAWeek,
+    viewYear,
+    viewMonth,
+    action
+  ) {
+    action = action || "selectDate";
     var html = '<div class="cl-picker-options">';
     html +=
-      '<div class="cl-picker-option cl-picker-today" data-action="selectDate" data-date="' +
+      '<div class="cl-picker-option cl-picker-today" data-action="' +
+      action +
+      '" data-date="' +
       today +
       '"><span>\u2B50</span><span class="cl-picker-opt-label">Today</span><span class="cl-picker-opt-date">' +
       formatShortDate(today) +
       "</span></div>";
     html +=
-      '<div class="cl-picker-option" data-action="selectDate" data-date="' +
+      '<div class="cl-picker-option" data-action="' +
+      action +
+      '" data-date="' +
       tmr +
       '"><span>\u2192</span><span class="cl-picker-opt-label">Tomorrow</span><span class="cl-picker-opt-date">' +
       formatShortDate(tmr) +
       "</span></div>";
     html +=
-      '<div class="cl-picker-option" data-action="selectDate" data-date="' +
+      '<div class="cl-picker-option" data-action="' +
+      action +
+      '" data-date="' +
       nextMon +
       '"><span>\u{1F4C5}</span><span class="cl-picker-opt-label">Next Monday</span><span class="cl-picker-opt-date">' +
       formatShortDate(nextMon) +
       "</span></div>";
     html +=
-      '<div class="cl-picker-option" data-action="selectDate" data-date="' +
+      '<div class="cl-picker-option" data-action="' +
+      action +
+      '" data-date="' +
       inAWeek +
       '"><span>+7</span><span class="cl-picker-opt-label">In a week</span><span class="cl-picker-opt-date">' +
       formatShortDate(inAWeek) +
       "</span></div>";
     html += "</div>";
     html += '<div class="cl-picker-divider"></div>';
-    html += renderMiniCalendar(today, viewYear, viewMonth);
+    html += renderMiniCalendar(today, viewYear, viewMonth, action);
     return html;
   }
-  function renderMiniCalendar(todayStr, viewYear, viewMonth) {
+  function renderMiniCalendar(todayStr, viewYear, viewMonth, action) {
+    action = action || "selectDate";
     if (viewYear == null || viewMonth == null) {
       var parts = todayStr.split("-");
       viewYear = parseInt(parts[0], 10);
@@ -2570,7 +2607,9 @@
       html +=
         '<span class="' +
         cls +
-        '" data-action="selectDate" data-date="' +
+        '" data-action="' +
+        action +
+        '" data-date="' +
         dateStr +
         '">' +
         d +
@@ -2579,14 +2618,17 @@
     html += "</div></div>";
     return html;
   }
-  function renderDateWeekTab() {
+  function renderDateWeekTab(action) {
+    action = action || "selectWeek";
     var currentWeek = State.currentWeek;
     var html = '<div class="cl-picker-options">';
     for (var w = 0; w < 8; w++) {
       var weekStr = addWeeks(currentWeek, w);
       var label = w === 0 ? "This week" : w === 1 ? "Next week" : weekStr;
       html +=
-        '<div class="cl-picker-option" data-action="selectWeek" data-week="' +
+        '<div class="cl-picker-option" data-action="' +
+        action +
+        '" data-week="' +
         weekStr +
         '"><span class="cl-picker-opt-label">' +
         label +
@@ -2602,13 +2644,14 @@
     if (!editor || !State.editDraft) return;
     var chip = editor.querySelector('[data-action="openDatePicker"]');
     if (!chip) return;
-    var label = "Schedule...";
+    var label = "Due...";
     if (State.editDraft.scheduledDate)
       label = formatShortDate(State.editDraft.scheduledDate);
     else if (State.editDraft.scheduledWeek)
       label = State.editDraft.scheduledWeek;
     chip.innerHTML = '<span class="cl-meta-icon">\u{1F4C5}</span>' + label;
   }
+
   function showNotePicker(anchor) {
     closePickers();
     var rect = anchor.getBoundingClientRect();
@@ -2616,27 +2659,126 @@
     picker.className = "cl-picker cl-note-picker";
     picker.style.top = rect.bottom + 4 + "px";
     picker.style.left = Math.min(rect.left, window.innerWidth - 310) + "px";
+
+    var today = State.today;
+    var tmr = addDays(today, 1);
+    var nextMon = getNextMonday(today);
+    var inAWeek = addDays(today, 7);
+    var todayParts = today.split("-");
+    var viewYear = parseInt(todayParts[0], 10);
+    var viewMonth = parseInt(todayParts[1], 10) - 1;
+
     picker.innerHTML =
-      '<div class="cl-picker-search"><input class="cl-picker-input" placeholder="Search notes..." autofocus/></div><div class="cl-picker-results" id="cl-note-results">' +
+      '<div class="cl-picker-tabs"><div class="cl-picker-tab" data-tab="move-day">Day</div><div class="cl-picker-tab" data-tab="move-week">Week</div><div class="cl-picker-tab cl-picker-tab-active" data-tab="move-note">Note</div></div><div class="cl-picker-body" id="cl-move-body"><div class="cl-picker-search"><input class="cl-picker-input" placeholder="Search notes..." autofocus/></div><div class="cl-picker-results" id="cl-note-results">' +
       renderNoteResults("") +
-      '</div><div class="cl-picker-footer"><span style="opacity:0.35;font-size:11px;">\u21B5 select \xB7 Esc close</span></div>';
+      '</div></div><div class="cl-picker-footer"><span style="opacity:0.35;font-size:11px;">\u21B5 select \xB7 Esc close</span></div>';
+
     document.body.appendChild(picker);
     positionPickerVertically(picker, anchor);
-    var input = picker.querySelector(".cl-picker-input");
-    input.addEventListener("input", function () {
-      document.getElementById("cl-note-results").innerHTML = renderNoteResults(
-        input.value
-      );
-    });
+
+    function attachSearch() {
+      var input = picker.querySelector(".cl-picker-input");
+      if (input) {
+        input.addEventListener("input", function () {
+          var res = document.getElementById("cl-note-results");
+          if (res) res.innerHTML = renderNoteResults(input.value);
+        });
+        input.focus();
+      }
+    }
+    attachSearch();
+
     picker.addEventListener("click", function (e) {
-      var target = e.target.closest('[data-action="selectNote"]');
-      if (target) {
+      var tab = e.target.closest("[data-tab]");
+      if (tab) {
+        var tabs = picker.querySelectorAll(".cl-picker-tab");
+        for (var i = 0; i < tabs.length; i++)
+          tabs[i].classList.remove("cl-picker-tab-active");
+        tab.classList.add("cl-picker-tab-active");
+        var body = picker.querySelector("#cl-move-body");
+        if (tab.dataset.tab === "move-day") {
+          body.innerHTML = renderDateDayTab(
+            today,
+            tmr,
+            nextMon,
+            inAWeek,
+            viewYear,
+            viewMonth,
+            "moveToDate"
+          );
+        } else if (tab.dataset.tab === "move-week") {
+          body.innerHTML = renderDateWeekTab("moveToWeek");
+        } else {
+          body.innerHTML =
+            '<div class="cl-picker-search"><input class="cl-picker-input" placeholder="Search notes..." autofocus/></div><div class="cl-picker-results" id="cl-note-results">' +
+            renderNoteResults("") +
+            "</div>";
+          attachSearch();
+        }
+        return;
+      }
+
+      var target = e.target.closest("[data-action]");
+      if (!target) return;
+
+      if (
+        target.dataset.action === "calPrev" ||
+        target.dataset.action === "calNext"
+      ) {
+        if (target.dataset.action === "calPrev") {
+          viewMonth--;
+          if (viewMonth < 0) {
+            viewMonth = 11;
+            viewYear--;
+          }
+        } else {
+          viewMonth++;
+          if (viewMonth > 11) {
+            viewMonth = 0;
+            viewYear++;
+          }
+        }
+        var dayBody = picker.querySelector("#cl-move-body");
+        if (dayBody)
+          dayBody.innerHTML = renderDateDayTab(
+            today,
+            tmr,
+            nextMon,
+            inAWeek,
+            viewYear,
+            viewMonth,
+            "moveToDate"
+          );
+        return;
+      }
+
+      if (target.dataset.action === "selectNote") {
         State.editDraft.moveToFilename = target.dataset.filename;
         State.editDraft.moveToLabel = target.dataset.title;
         var editor = document.getElementById("cl-editor");
         if (editor) {
           var chip = editor.querySelector('[data-action="openNotePicker"]');
           if (chip) chip.textContent = "\u2192 " + target.dataset.title;
+        }
+        closePickers();
+      } else if (target.dataset.action === "moveToDate") {
+        var dStr = target.dataset.date;
+        State.editDraft.moveToFilename = dStr.replace(/-/g, "") + ".md";
+        State.editDraft.moveToLabel = formatShortDate(dStr);
+        var editor = document.getElementById("cl-editor");
+        if (editor) {
+          var chip = editor.querySelector('[data-action="openNotePicker"]');
+          if (chip) chip.textContent = "\u2192 " + formatShortDate(dStr);
+        }
+        closePickers();
+      } else if (target.dataset.action === "moveToWeek") {
+        var wStr = target.dataset.week;
+        State.editDraft.moveToFilename = wStr + ".md";
+        State.editDraft.moveToLabel = wStr;
+        var editor = document.getElementById("cl-editor");
+        if (editor) {
+          var chip = editor.querySelector('[data-action="openNotePicker"]');
+          if (chip) chip.textContent = "\u2192 " + wStr;
         }
         closePickers();
       }
@@ -2822,6 +2964,7 @@
     var pickers = document.querySelectorAll(".cl-picker");
     for (var i = 0; i < pickers.length; i++) pickers[i].remove();
   }
+
   // src/webview/ui/task-editor.js
   function expandTask(taskId) {
     if (!taskId) return;
@@ -3023,7 +3166,7 @@
       html += "</div>";
     }
     html += '<div class="cl-editor-meta">';
-    var dateLabel = "Schedule...";
+    var dateLabel = "Due...";
     if (draft.scheduledDate) dateLabel = formatShortDate(draft.scheduledDate);
     else if (draft.scheduledWeek) dateLabel = draft.scheduledWeek;
     html +=
@@ -5317,8 +5460,16 @@
     if (!main) return;
     _mainListenersAttached = true;
     main.addEventListener("dblclick", function (e) {
-      if (e.target.closest(".cl-cb") || e.target.closest(".cl-task-editor"))
+      // if (e.target.closest(".cl-cb") || e.target.closest(".cl-task-editor")) return;
+      if (e.target.closest(".cl-cb")) return;
+      if (e.target.closest(".cl-task-editor")) {
+        if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") {
+          return;
+        }
+        e.preventDefault();
+        saveExpandedTask();
         return;
+      }
       var row = e.target.closest(".cl-task-row");
       if (row) {
         e.preventDefault();

@@ -1,8 +1,8 @@
 /* global DataStore, Editor, HTMLView, CommandBar, NotePlan */
 
-var PLUGIN_ID = "asktru.Clarity";
-var WINDOW_ID = "asktru.Clarity.dashboard";
-var WINDOW_ID_FLOATING = "asktru.Clarity.dashboardWindow";
+var PLUGIN_ID = "sujin.Clarity";
+var WINDOW_ID = "sujin.Clarity.dashboard";
+var WINDOW_ID_FLOATING = "sujin.Clarity.dashboardWindow";
 
 // ─── Settings ──────────────────────────────────────────────
 function getSettings() {
@@ -169,8 +169,8 @@ async function showClarity(targetWindowID) {
     var winOptions = {
       customId: winID,
       savedFilename: isFloating
-        ? "../../asktru.Clarity/clarity_window.html"
-        : "../../asktru.Clarity/clarity.html",
+        ? "../../sujin.Clarity/clarity_window.html"
+        : "../../sujin.Clarity/clarity.html",
       shouldFocus: true,
       reuseUsersWindowRect: true,
       headerBGColor: "transparent",
@@ -404,15 +404,25 @@ async function onMessageFromHTMLView(actionType, data) {
         if (tWasOpen) {
           tPara.type = isCl ? "checklistDone" : "done";
           var now = new Date();
-          var doneTag =
-            "@done(" +
+          var todayYMD =
             now.getFullYear() +
             "-" +
             String(now.getMonth() + 1).padStart(2, "0") +
             "-" +
-            String(now.getDate()).padStart(2, "0") +
-            ")";
-          tPara.content = (tPara.content || "").trimEnd() + " " + doneTag;
+            String(now.getDate()).padStart(2, "0");
+          var doneTag = "@done(" + todayYMD + ")";
+
+          // 현재 노트가 오늘 날짜의 Daily Note인지 판별
+          var tCalInfo = getCalendarNoteInfo(tNote);
+          var isTodayDaily =
+            tCalInfo.isCalendar &&
+            tCalInfo.calendarType === "day" &&
+            tCalInfo.date === todayYMD;
+
+          // 오늘 날짜의 Daily Note가 아닐 때만 @done 태그 추가
+          if (!isTodayDaily) {
+            tPara.content = (tPara.content || "").trimEnd() + " " + doneTag;
+          }
         } else {
           tPara.type = isCl ? "checklist" : "open";
           tPara.content = (tPara.content || "").replace(
@@ -433,7 +443,7 @@ async function onMessageFromHTMLView(actionType, data) {
           try {
             await DataStore.invokePluginCommandByName(
               "generate repeats",
-              "asktru.Routine",
+              "sujin.Routine",
               [msg.filename]
             );
           } catch (e) {
@@ -619,35 +629,84 @@ async function onMessageFromHTMLView(actionType, data) {
         // Move task if requested
         if (msg.moveToFilename && msg.moveToFilename !== msg.filename) {
           var targetNote = findNoteByFilename(msg.moveToFilename);
+
+          // 대상 노트가 없는 경우 (예: 아직 생성되지 않은 미래의 Daily/Weekly 노트) 자동 생성 시도
+          if (!targetNote) {
+            var baseName = msg.moveToFilename.replace(/\.(md|txt)$/, "");
+            var dm = baseName.match(/^(\d{4})(\d{2})(\d{2})$/);
+            if (dm) {
+              try {
+                targetNote = DataStore.calendarNoteByDateString(
+                  dm[1] + "-" + dm[2] + "-" + dm[3]
+                );
+              } catch (e) {}
+            } else {
+              var wm = baseName.match(/^(\d{4}-W\d{2})$/);
+              if (wm) {
+                try {
+                  targetNote = DataStore.calendarNoteByDateString(wm[1]);
+                } catch (e) {}
+              }
+            }
+          }
+
           if (targetNote) {
-            // Gather the task + its children as one block, then insert above any
-            // ## Done section so the incomplete task isn't dropped among completed ones.
+            // 양방향 링크 생성을 위해 원본 노트와 대상 노트의 식별자를 계산합니다.
+            var sCalInfo = getCalendarNoteInfo(sNote);
+            var sourceLink = sCalInfo.isCalendar
+              ? sCalInfo.date ||
+                sCalInfo.week ||
+                sCalInfo.month ||
+                sCalInfo.year
+              : "[[" + (sNote.title || "") + "]]";
+
+            var tCalInfo = getCalendarNoteInfo(targetNote);
+            var targetLink = tCalInfo.isCalendar
+              ? tCalInfo.date ||
+                tCalInfo.week ||
+                tCalInfo.month ||
+                tCalInfo.year
+              : "[[" + (targetNote.title || "") + "]]";
+
+            // 대상 노트로 복사될 메인 태스크 생성 (원본을 향하는 '<' 백링크 추가)
+            var copiedMainContent = newContent + " <" + sourceLink;
             var moveItems = [
               {
-                content: newContent,
+                content: copiedMainContent,
                 type:
-                  sPara.type === "checklist" || sPara.type === "checklistDone"
+                  sPara.type === "checklist" ||
+                  sPara.type === "checklistDone" ||
+                  sPara.type === "checklistScheduled" ||
+                  sPara.type === "checklistCancelled"
                     ? "checklist"
                     : "open"
               }
             ];
+
+            // 하위(들여쓰기 된) 항목들 수집
             var srcParas = sNote.paragraphs;
-            var childIndices = [];
             for (var cmi = msg.lineIndex + 1; cmi < srcParas.length; cmi++) {
               if ((srcParas[cmi].indentLevel || 0) <= (sPara.indentLevel || 0))
                 break;
-              childIndices.push(cmi);
               moveItems.push({
                 content: srcParas[cmi].content,
                 type: srcParas[cmi].type
               });
             }
+
+            // 대상 노트에 태스크 및 하위 항목 삽입 (기존 방식 유지)
             insertTasksAboveDone(targetNote, moveItems);
-            // Remove from source (reverse order)
-            for (var ri = childIndices.length - 1; ri >= 0; ri--) {
-              sNote.removeParagraphAtIndex(childIndices[ri]);
-            }
-            sNote.removeParagraphAtIndex(msg.lineIndex);
+
+            // 원본 태스크를 지우지 않고 상태를 Scheduled([>])로 변경한 뒤 대상 링크('>') 추가
+            sPara.type =
+              sPara.type === "checklist" ||
+              sPara.type === "checklistDone" ||
+              sPara.type === "checklistScheduled" ||
+              sPara.type === "checklistCancelled"
+                ? "checklistScheduled"
+                : "scheduled";
+            sPara.content = newContent + " >" + targetLink;
+            sNote.updateParagraph(sPara);
           }
         }
 
@@ -1046,10 +1105,19 @@ function getTodayStr() {
 
 function getCurrentWeekStr() {
   var d = new Date();
-  var jan1 = new Date(d.getFullYear(), 0, 1);
-  var dayOfYear = Math.floor((d - jan1) / 86400000) + 1;
-  var weekNum = Math.ceil((dayOfYear + jan1.getDay()) / 7);
-  return d.getFullYear() + "-W" + String(weekNum).padStart(2, "0");
+  var date = new Date(d.getTime());
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+  var week1 = new Date(date.getFullYear(), 0, 4);
+  var weekNum =
+    1 +
+    Math.round(
+      ((date.getTime() - week1.getTime()) / 86400000 -
+        3 +
+        ((week1.getDay() + 6) % 7)) /
+        7
+    );
+  return date.getFullYear() + "-W" + String(weekNum).padStart(2, "0");
 }
 
 function getCalendarNoteInfo(note) {
@@ -1065,6 +1133,10 @@ function getCalendarNoteInfo(note) {
   var weeklyMatch = filename.match(/^(\d{4}-W\d{2})$/);
   if (weeklyMatch) {
     return { isCalendar: true, calendarType: "week", week: weeklyMatch[1] };
+  }
+  var yearlyMatch = filename.match(/^(\d{4})$/);
+  if (yearlyMatch) {
+    return { isCalendar: true, calendarType: "year", year: yearlyMatch[0] };
   }
   return { isCalendar: false };
 }
@@ -1154,7 +1226,7 @@ function applyFrontmatterUpdates(content, updates) {
 }
 
 // ─── Review Cadence (frontmatter) ──────────────────────────
-// Mirror of asktru.WeeklyReview's interval parser so review semantics stay in
+// Mirror of sujin.WeeklyReview's interval parser so review semantics stay in
 // sync. Returns days as a positive integer, or null when the cadence is
 // missing/invalid (we treat "no cadence" as "review not tracked", unlike
 // WeeklyReview which defaults to weekly).
@@ -1322,7 +1394,14 @@ function gatherAllTasks() {
       // Past/today: respect inboxLookbackDays (drives Inbox).
       // Future: respect upcomingLookaheadDays (drives Upcoming's daily-note tasks).
       if (calInfo.date < lookbackStr || calInfo.date > lookaheadStr) continue;
-      extractTasksFromNote(calNote, tasks, "calendar", calInfo.date, null);
+      extractTasksFromNote(
+        calNote,
+        tasks,
+        "calendar",
+        calInfo.date,
+        null,
+        null
+      );
     } else if (calInfo.calendarType === "week") {
       // Window weekly notes by their start date (calNote.date), same range as
       // daily notes. Their tasks get sourceWeek (no sourceDate) — they reach
@@ -1330,7 +1409,23 @@ function gatherAllTasks() {
       var wd = calNote.date;
       var wdStr = wd ? fmtYMD(wd) : null;
       if (wdStr && (wdStr < lookbackStr || wdStr > lookaheadStr)) continue;
-      extractTasksFromNote(calNote, tasks, "calendar", null, calInfo.week);
+      extractTasksFromNote(
+        calNote,
+        tasks,
+        "calendar",
+        null,
+        calInfo.week,
+        null
+      );
+    } else if (calInfo.calendarType === "year") {
+      extractTasksFromNote(
+        calNote,
+        tasks,
+        "calendar",
+        null,
+        null,
+        calInfo.year
+      );
     }
   }
 
@@ -1369,7 +1464,14 @@ function getParaIndent(p) {
   return indent;
 }
 
-function extractTasksFromNote(note, tasks, sourceType, sourceDate, sourceWeek) {
+function extractTasksFromNote(
+  note,
+  tasks,
+  sourceType,
+  sourceDate,
+  sourceWeek,
+  sourceYear
+) {
   var paras = note.paragraphs;
   if (!paras || paras.length === 0) return;
 
@@ -1463,6 +1565,7 @@ function extractTasksFromNote(note, tasks, sourceType, sourceDate, sourceWeek) {
       scheduledDate: parsed.scheduledDate,
       scheduledWeek: parsed.scheduledWeek,
       sourceWeek: sourceWeek || null,
+      sourceYear: sourceYear || null,
       tags: parsed.tags,
       mentions: parsed.mentions,
       blockId: parsed.blockId,
